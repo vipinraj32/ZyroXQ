@@ -6,6 +6,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import xyz.zyro.entity.User;
+import xyz.zyro.exception.ResourceNotFoundException;
 import xyz.zyro.repository.UserRepository;
 
 
@@ -17,7 +19,8 @@ public class CustomUserDetails implements UserDetailsService{
 	
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-		return userRepository.findById(username).orElseThrow();
+		User user=userRepository.findByEmail(username).orElseThrow(()->new ResourceNotFoundException("Invalid Email/Password"));
+		return user;
 	}
 
 	

@@ -20,6 +20,7 @@ import xyz.zyro.dto.Response;
 import xyz.zyro.entity.User;
 import xyz.zyro.entity.type.AuthProviderType;
 import xyz.zyro.entity.type.Role;
+import xyz.zyro.exception.ResourceNotFoundException;
 import xyz.zyro.repository.RoleRepository;
 import xyz.zyro.repository.UserRepository;
 import xyz.zyro.security.AuthenticateUtill;
@@ -42,6 +43,8 @@ public class AuthenticatService {
     private  PasswordEncoder passwordEncoder;
 	
 	public Response login(LoginRequest request) {
+		User u=userRepository.findByEmailAndPassword(request.getEmail(), request.getPassword()).orElseThrow(()->new ResourceNotFoundException("Invlid email/password"));
+		
 	     Authentication authentication = authenticationManager.authenticate(
 	                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
 	        );

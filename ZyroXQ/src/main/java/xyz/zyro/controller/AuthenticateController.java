@@ -23,7 +23,7 @@ public class AuthenticateController {
 	@Autowired
 	private AuthenticatService authenticatService;
 	
-	@PostMapping("/login")
+	@PostMapping("/advertiser/login")
     public ResponseEntity<Response> login(@RequestBody LoginRequest loginRequestDto) {
         return ResponseEntity.ok(authenticatService.login(loginRequestDto));
     }
