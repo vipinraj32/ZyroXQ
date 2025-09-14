@@ -10,6 +10,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -21,7 +22,6 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -39,14 +39,12 @@ public class User implements UserDetails {
 	private String email;
 	@NotBlank(message = "Name is required")
 	private String userName;
-	 @NotBlank(message = "Password is required")
-	 @Size(min = 8,max = 200, message = "Password must be at least 8 characters long. ")
 	private String password;
 	 
     private String providerId;
     @Enumerated(EnumType.STRING)
     private AuthProviderType providerType;
-    @OneToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.EAGER,cascade = CascadeType.ALL)
     @JoinTable(
 			name = "user_role",
 			joinColumns = @JoinColumn(name = "email",referencedColumnName = "email"),
@@ -61,12 +59,6 @@ public class User implements UserDetails {
 	public Collection<? extends GrantedAuthority> getAuthorities() {
 		List<SimpleGrantedAuthority>authorities=this.roles.stream().map((role)-> new SimpleGrantedAuthority(role.getName())).collect(Collectors.toList());
 		return authorities;
-	}
-
-	@Override
-	public String getPassword() {
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 	@Override
@@ -126,6 +118,12 @@ public class User implements UserDetails {
 	public void removeRole(Role role) {
 		this.roles.remove(role);
 		role.getUsers().remove(this);
+	}
+
+	@Override
+	public String getPassword() {
+		// TODO Auto-generated method stub
+		return password;
 	}
 
 

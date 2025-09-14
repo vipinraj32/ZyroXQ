@@ -20,8 +20,6 @@ import lombok.Setter;
 import xyz.zyro.entity.User;
 
 @Entity
-@Setter
-@Getter
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

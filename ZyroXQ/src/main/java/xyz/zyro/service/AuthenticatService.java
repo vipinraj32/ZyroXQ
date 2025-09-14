@@ -1,16 +1,26 @@
 package xyz.zyro.service;
 
+import java.util.Set;
+
+import org.hibernate.internal.build.AllowSysOut;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import xyz.zyro.dto.LoginRequest;
 import xyz.zyro.dto.Response;
 import xyz.zyro.entity.User;
+import xyz.zyro.entity.type.AuthProviderType;
+import xyz.zyro.entity.type.Role;
+import xyz.zyro.repository.RoleRepository;
 import xyz.zyro.repository.UserRepository;
 import xyz.zyro.security.AuthenticateUtill;
 
@@ -21,13 +31,17 @@ public class AuthenticatService {
 	private UserRepository userRepository;
 	@Autowired
 	private PasswordEncoder encoder;
-	
+	@Autowired
 	private AuthenticateUtill authenticateUtill;
-	
+	@Autowired
+	private RoleRepository roleRepository;
 	@Autowired
 	private AuthenticationManager authenticationManager;
 	
-	private Response login(LoginRequest request) {
+	@Autowired
+    private  PasswordEncoder passwordEncoder;
+	
+	public Response login(LoginRequest request) {
 	     Authentication authentication = authenticationManager.authenticate(
 	                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
 	        );
@@ -36,9 +50,70 @@ public class AuthenticatService {
 
 	        String token = authenticateUtill.generateAccessToken(user);
 
-	        return new Response(token, user.getEmail(), user.getAuthorities().toString(), user.getName());
+	        return new Response(token, user.getEmail(), user.getAuthorities().toString(), user.getUsername());
+	    }
+	   public User signUpInternal(LoginRequest signupRequestDto, AuthProviderType authProviderType,String name, String providerId) {
+	        User user = userRepository.findById(signupRequestDto.getEmail()).orElse(null);
+
+	        if(user != null) throw new IllegalArgumentException("User already exists");
+	         Role role=roleRepository.findById(2).orElse(null);
+	        user = User.builder()
+	                .email(signupRequestDto.getEmail())
+	                .userName(name)
+//	                .password(signupRequestDto.getPassword())
+	                .providerId(providerId)
+	                .providerType(authProviderType)
+	                .roles(Set.of(role)) // Role.PATIENT
+	                .build();
+
+	        if(authProviderType == AuthProviderType.EMAIL) {
+	            user.setPassword(passwordEncoder.encode(signupRequestDto.getPassword()));
+	        }
+//	        user.addRole(role);
+	        user = userRepository.save(user);
+
+	       return user;
+	    }
+	
+	  @Transactional
+	    public User signup(User signupRequestDto) {
+	    	LoginRequest request=LoginRequest.builder()
+	    			.email(signupRequestDto.getEmail())
+	    			.password(signupRequestDto.getPassword())
+	    			.build();
+	        User user = signUpInternal(request, AuthProviderType.EMAIL,signupRequestDto.getUsername(), null);
+	        return user;
+	    }
+	  
+	  
+	  @Transactional
+	    public ResponseEntity<Response> handleOAuth2LoginRequest(OAuth2User oAuth2User, String registrationId) {
+	        AuthProviderType providerType = authenticateUtill.getProviderTypeFromRegistrationId(registrationId);
+	        String providerId = authenticateUtill.determineProviderIdFromOAuth2User(oAuth2User, registrationId);
+
+	        User user = userRepository.findByProviderIdAndProviderType(providerId, providerType).orElse(null);
+	        String email = oAuth2User.getAttribute("email");
+	        String name = oAuth2User.getAttribute("name");
+	        log.info(name);
+
+	        User emailUser = userRepository.findByEmail(email).orElse(null);
+
+	        if(user == null && emailUser == null) {
+	            // signup flow:
+	            String useremail = authenticateUtill.determineUsernameFromOAuth2User(oAuth2User, registrationId, providerId);
+	            user = signUpInternal(new LoginRequest(useremail, null), providerType,name, providerId);
+	        } else if(user != null) {
+	            if(email != null && !email.isBlank() && !email.equals(user.getUsername())) {
+	                user.setEmail(email);
+	                userRepository.save(user);
+	            }
+	        } else {
+	            throw new BadCredentialsException("This email is already registered with provider "+emailUser.getProviderType());
+	        }
+
+	        Response loginResponseDto = new Response(authenticateUtill.generateAccessToken(user), user.getEmail(), user.getAuthorities().toString(),user.getUsername());
+	        return ResponseEntity.ok(loginResponseDto);
 	    }
 	}
 	
 
-}
