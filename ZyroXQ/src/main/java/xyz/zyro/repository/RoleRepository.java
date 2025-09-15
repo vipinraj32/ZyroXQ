@@ -7,3 +7,4 @@ import xyz.zyro.entity.type.Role;
 public interface RoleRepository extends JpaRepository<Role,Integer> {
 
 }
+	

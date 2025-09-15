@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -21,5 +22,13 @@ public class GlobalExceptionHandler {
 	@ResponseBody
 	public ErrorResponse handleResourceNotFoundException(ResourceNotFoundException exception) {
 		return new ErrorResponse(exception.getMessage(),HttpStatus.NOT_FOUND.value());
+	}
+	
+	@ExceptionHandler(ResolverException.class)
+	@ResponseStatus(HttpStatus.FORBIDDEN)
+	@ResponseBody
+	public ErrorResponse handleResolverException(ResolverException exception) {
+		
+		return new ErrorResponse(exception.getMessage(),HttpStatus.FORBIDDEN.value());
 	}
 }

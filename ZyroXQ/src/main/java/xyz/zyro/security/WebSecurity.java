@@ -1,7 +1,10 @@
 package xyz.zyro.security;
 
+import java.io.IOException;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -9,8 +12,10 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import xyz.zyro.exception.ResolverException;
 
 @Configuration
 @AllArgsConstructor
@@ -36,7 +41,9 @@ public class WebSecurity {
 	                .oauth2Login(oAuth2 -> oAuth2
 	                        .failureHandler((request, response, exception) -> {
 	                            log.error("OAuth2 error: {}", exception.getMessage());
-	                            handlerExceptionResolver.resolveException(request, response, null, exception);
+//	                            handlerExceptionResolver.resolveException(request, response, null, exception);
+//	                            throw new ResolverException(exception.getMessage());
+	                            sendErrorResponse(response,exception.getMessage(), HttpStatus.FORBIDDEN.value());
 	                        })
 	                        .successHandler(oAuth2SuccessHandler)
 	                        ); 
@@ -44,4 +51,21 @@ public class WebSecurity {
 //	                .formLogin();
 	        return httpSecurity.build();
 	    }
+	  
+	  private void sendErrorResponse(HttpServletResponse response, String message, int statusCode) throws IOException {
+		    response.setStatus(statusCode);
+		    response.setContentType("application/json");
+		    response.setCharacterEncoding("UTF-8");
+
+		    String json = String.format(
+		        "{ \"timestamp\": \"%s\", \"status\": %d, \"error\": \"%s\", \"message\": \"%s\", \"path\": \"%s\" }",
+		        java.time.LocalDateTime.now(),
+		        statusCode,
+		        HttpStatus.valueOf(statusCode).getReasonPhrase(),
+		        message,
+		        "" // optionally: request.getRequestURI()
+		    );
+
+		    response.getWriter().write(json);
+		}
 }
