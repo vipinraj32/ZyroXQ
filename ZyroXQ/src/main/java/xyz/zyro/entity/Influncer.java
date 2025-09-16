@@ -2,6 +2,8 @@ package xyz.zyro.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,8 +19,13 @@ public class Influncer {
 	@Id
 	@NotBlank(message = "username must be required")
 	private String username;
+	@NotBlank(message = "email must be required")
 	private String email;
+	@NotBlank(message = "walletAddress must be required")
 	private String walletAddress;
+	
 	private String name;
+	@OneToOne(mappedBy = "influncer")
+	private User user;
 	
 }
