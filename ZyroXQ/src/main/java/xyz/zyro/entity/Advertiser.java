@@ -2,6 +2,8 @@ package xyz.zyro.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -25,8 +27,6 @@ public class Advertiser {
 	private String email;
 	 @NotBlank(message = "Password is required")
 	 @Size(min = 8,max = 200, message = "Password must be at least 8 characters long. ")
-	private String password;
-	 @NotBlank(message = "name must be required")
 	private String name;
 	@NotBlank(message = "Company name must be required")
 	private String companyName;
@@ -38,6 +38,8 @@ public class Advertiser {
 	@NotBlank(message = "contact number must be required")
     private String mobile;
 	
+	@OneToOne(mappedBy = "advertiser")
+	private User user;
 	
 	
 }

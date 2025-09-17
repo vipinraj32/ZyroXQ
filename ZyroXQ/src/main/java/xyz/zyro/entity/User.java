@@ -20,6 +20,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -51,7 +52,13 @@ public class User implements UserDetails {
 			inverseJoinColumns = @JoinColumn(name="role",referencedColumnName = "id")
 			)
     private Set<Role> roles=new HashSet<>();
-    
+    @OneToOne(cascade=CascadeType.ALL)
+	@JoinColumn(name = "influncer_username", referencedColumnName = "username")
+    private Influncer influncer;
+    @OneToOne(cascade=CascadeType.ALL)
+	@JoinColumn(name = "advertiser_email", referencedColumnName = "email")
+   private Advertiser advertiser;
+   private Boolean profileStatus;
     
 	
 	
@@ -124,6 +131,30 @@ public class User implements UserDetails {
 	public String getPassword() {
 		// TODO Auto-generated method stub
 		return password;
+	}
+
+	public Influncer getInfluncer() {
+		return influncer;
+	}
+
+	public void setInfluncer(Influncer influncer) {
+		this.influncer = influncer;
+	}
+
+	public Advertiser getAdvertiser() {
+		return advertiser;
+	}
+
+	public void setAdvertiser(Advertiser advertiser) {
+		this.advertiser = advertiser;
+	}
+
+	public Boolean getProfileStatus() {
+		return profileStatus;
+	}
+
+	public void setProfileStatus(Boolean profileStatus) {
+		this.profileStatus = profileStatus;
 	}
 
 

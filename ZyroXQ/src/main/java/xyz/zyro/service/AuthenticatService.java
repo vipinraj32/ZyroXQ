@@ -66,6 +66,7 @@ public class AuthenticatService {
 //	                .password(signupRequestDto.getPassword())
 	                .providerId(providerId)
 	                .providerType(authProviderType)
+	                .profileStatus(false)
 	                .roles(Set.of(role)) // Role.PATIENT
 	                .build();
 
