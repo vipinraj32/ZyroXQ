@@ -41,6 +41,7 @@ public class User implements UserDetails {
 	@NotBlank(message = "Name is required")
 	private String userName;
 	private String password;
+	private Integer roleId;
 	 
     private String providerId;
     @Enumerated(EnumType.STRING)
@@ -155,6 +156,14 @@ public class User implements UserDetails {
 
 	public void setProfileStatus(Boolean profileStatus) {
 		this.profileStatus = profileStatus;
+	}
+
+	public Integer getRoleId() {
+		return roleId;
+	}
+
+	public void setRoleId(Integer roleId) {
+		this.roleId = roleId;
 	}
 
 

@@ -43,7 +43,8 @@ public class AuthenticatService {
     private  PasswordEncoder passwordEncoder;
 	
 	public Response login(LoginRequest request) {
-		User u=userRepository.findByEmailAndPassword(request.getEmail(), request.getPassword()).orElseThrow(()->new ResourceNotFoundException("Invlid email/password"));
+//		log.info(request.getPassword());
+//		User u=userRepository.findByEmailAndPassword(request.getEmail(), request.getPassword()).orElseThrow(()->new ResourceNotFoundException("Invlid email/password"));
 		
 	     Authentication authentication = authenticationManager.authenticate(
 	                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
@@ -55,11 +56,11 @@ public class AuthenticatService {
 
 	        return new Response(token, user.getEmail(), user.getAuthorities().toString(), user.getUsername());
 	    }
-	   public User signUpInternal(LoginRequest signupRequestDto, AuthProviderType authProviderType,String name, String providerId) {
+	   public User signUpInternal(LoginRequest signupRequestDto, AuthProviderType authProviderType,String name, String providerId, Integer roleId) {
 	        User user = userRepository.findById(signupRequestDto.getEmail()).orElse(null);
 
 	        if(user != null) throw new IllegalArgumentException("User already exists");
-	         Role role=roleRepository.findById(2).orElse(null);
+	         Role role=roleRepository.findById(roleId).orElse(null);
 	        user = User.builder()
 	                .email(signupRequestDto.getEmail())
 	                .userName(name)
@@ -79,13 +80,14 @@ public class AuthenticatService {
 	       return user;
 	    }
 	
+	   
 	  @Transactional
 	    public User signup(User signupRequestDto) {
 	    	LoginRequest request=LoginRequest.builder()
 	    			.email(signupRequestDto.getEmail())
 	    			.password(signupRequestDto.getPassword())
 	    			.build();
-	        User user = signUpInternal(request, AuthProviderType.EMAIL,signupRequestDto.getUsername(), null);
+	        User user = signUpInternal(request, AuthProviderType.EMAIL,signupRequestDto.getUsername(), null,signupRequestDto.getRoleId());
 	        return user;
 	    }
 	  
@@ -105,7 +107,7 @@ public class AuthenticatService {
 	        if(user == null && emailUser == null) {
 	            // signup flow:
 	            String useremail = authenticateUtill.determineUsernameFromOAuth2User(oAuth2User, registrationId, providerId);
-	            user = signUpInternal(new LoginRequest(useremail, null), providerType,name, providerId);
+	            user = signUpInternal(new LoginRequest(useremail, null), providerType,name, providerId,2);
 	        } else if(user != null) {
 	            if(email != null && !email.isBlank() && !email.equals(user.getUsername())) {
 	                user.setEmail(email);

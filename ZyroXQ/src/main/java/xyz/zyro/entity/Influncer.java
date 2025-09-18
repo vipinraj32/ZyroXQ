@@ -23,7 +23,7 @@ public class Influncer {
 	private String email;
 	@NotBlank(message = "walletAddress must be required")
 	private String walletAddress;
-	
+	@NotBlank(message = "name must be required")
 	private String name;
 	@OneToOne(mappedBy = "influncer")
 	private User user;
