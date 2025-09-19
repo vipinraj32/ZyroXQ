@@ -29,4 +29,8 @@ public class AdvertiserService {
     	
     	return new AdvertiserDTO(advertiser.getName(),advertiser.getCompanyName(),advertiser.getWalletAddres(),advertiser.getStakeAmount(),advertiser.getMobile());
     }
+    
+    public String show() {
+    	return "Advertidser show Call";
+    }
 }

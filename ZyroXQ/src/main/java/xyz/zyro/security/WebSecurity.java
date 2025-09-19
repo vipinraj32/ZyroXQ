@@ -35,6 +35,7 @@ public class WebSecurity {
 	                        sessionConfig.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 	                .authorizeHttpRequests(auth -> auth
 	                        .requestMatchers("/user/login","/user/advertiser/login","/user/signup").permitAll()
+	                        .requestMatchers("/influncer/**").authenticated()
 	                        .anyRequest().authenticated()
 	                )
 	                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
