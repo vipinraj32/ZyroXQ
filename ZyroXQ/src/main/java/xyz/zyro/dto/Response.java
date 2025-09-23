@@ -14,4 +14,5 @@ public class Response {
 	private String email;
 	private String role;
 	private String username;
+	private Boolean profileStatus;
 }

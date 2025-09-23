@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -33,9 +34,10 @@ public class WebSecurity {
 	                .csrf(csrfConfig -> csrfConfig.disable())
 	                .sessionManagement(sessionConfig ->
 	                        sessionConfig.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+//	                sessionConfig.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
 	                .authorizeHttpRequests(auth -> auth
 	                        .requestMatchers("/user/login","/user/advertiser/login","/user/signup").permitAll()
-	                        .requestMatchers("/influncer/**").authenticated()
+	                        .requestMatchers(HttpMethod.POST, "/influncer/update-details").authenticated() 
 	                        .anyRequest().authenticated()
 	                )
 	                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)

@@ -24,10 +24,12 @@ public class InfluncerService {
 	public InfluncerDTO updateInfluncerDetails(Influncer influncer) {
 		log.info(influncer.getEmail()+"Influncer called");
 		User user=userRepository.findById(influncer.getUsername()).orElseThrow(()->new ResourceNotFoundException("Updation failed. User not register"));
+		if(user.getProfileStatus()==false) {
 		user.setInfluncer(influncer);
 		influncerRepository.save(influncer);
 		user.setProfileStatus(true);
 		userRepository.save(user);
+		}
 		return new InfluncerDTO(influncer.getEmail(), influncer.getWalletAddress(), influncer.getName());
 	}
 }

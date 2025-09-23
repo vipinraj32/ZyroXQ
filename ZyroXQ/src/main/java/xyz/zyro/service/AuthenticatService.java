@@ -54,7 +54,7 @@ public class AuthenticatService {
 
 	        String token = authenticateUtill.generateAccessToken(user);
 
-	        return new Response(token, user.getEmail(), user.getAuthorities().toString(), user.getUsername());
+	        return new Response(token, user.getEmail(), user.getAuthorities().toString(), user.getUsername(), user.getProfileStatus());
 	    }
 	   public User signUpInternal(LoginRequest signupRequestDto, AuthProviderType authProviderType,String name, String providerId, Integer roleId) {
 	        User user = userRepository.findById(signupRequestDto.getEmail()).orElse(null);
@@ -117,7 +117,7 @@ public class AuthenticatService {
 	            throw new BadCredentialsException("This email is already registered with provider "+emailUser.getProviderType());
 	        }
 
-	        Response loginResponseDto = new Response(authenticateUtill.generateAccessToken(user), user.getEmail(), user.getAuthorities().toString(),user.getUsername());
+	        Response loginResponseDto = new Response(authenticateUtill.generateAccessToken(user), user.getEmail(), user.getAuthorities().toString(),user.getUsername(),user.getProfileStatus());
 	        return ResponseEntity.ok(loginResponseDto);
 	    }
 	}
