@@ -31,4 +31,12 @@ public class GlobalExceptionHandler {
 		
 		return new ErrorResponse(exception.getMessage(),HttpStatus.FORBIDDEN.value());
 	}
+	
+	@ExceptionHandler(CustomIOException.class)
+	@ResponseStatus(HttpStatus.NOT_ACCEPTABLE)
+	@ResponseBody
+	public ErrorResponse handleCustomIOException(CustomIOException exception) {
+		
+		return new ErrorResponse(exception.getMessage(),HttpStatus.NOT_ACCEPTABLE.value());
+	}
 }

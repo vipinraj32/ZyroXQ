@@ -57,7 +57,7 @@ public class User implements UserDetails {
 	@JoinColumn(name = "influncer_username", referencedColumnName = "username")
     private Influncer influncer;
     @OneToOne(cascade=CascadeType.ALL)
-	@JoinColumn(name = "advertiser_email", referencedColumnName = "email")
+	@JoinColumn(name = "company_name", referencedColumnName = "companyName")
    private Advertiser advertiser;
    private Boolean profileStatus;
     

@@ -20,17 +20,16 @@ public class AdvertiserService {
     private UserRepository userRepository;
     
     @Transactional
-    public AdvertiserDTO updateAdvertiserDetails(Advertiser advertiser) {
-    	User user=userRepository.findByEmail(advertiser.getEmail()).orElseThrow(()->new ResourceNotFoundException("Updation failed. check your email"));
+    public AdvertiserDTO updateAdvertiserDetails(Advertiser advertiser, String email) {
+    	User user=userRepository.findByEmail(email).orElseThrow(()->new ResourceNotFoundException("Updation failed. check your email"));
+    	if(user.getProfileStatus()==false) {
     	user.setAdvertiser(advertiser);
     	user.setProfileStatus(true);
     	advertiserRepository.save(advertiser);
     	userRepository.save(user);
+    	}
     	
-    	return new AdvertiserDTO(advertiser.getName(),advertiser.getCompanyName(),advertiser.getWalletAddres(),advertiser.getStakeAmount(),advertiser.getMobile());
+    	return new AdvertiserDTO(advertiser.getName(),advertiser.getCompanyName(),advertiser.getWalletAddres(),advertiser.getStakeAmount(),advertiser.getMobile(),advertiser.getImageData(),advertiser.getImageName());
     }
     
-    public String show() {
-    	return "Advertidser show Call";
-    }
 }

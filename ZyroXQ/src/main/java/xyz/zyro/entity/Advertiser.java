@@ -2,6 +2,7 @@ package xyz.zyro.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.validation.constraints.Email;
@@ -21,15 +22,13 @@ import lombok.Setter;
 @Entity
 @Data
 public class Advertiser {
+	
 	@Id
-	@NotBlank(message = "Email is required")
-    @Email(message = "Please enter a valid email address")
-	private String email;
-	 @NotBlank(message = "Password is required")
-	 @Size(min = 8,max = 200, message = "Password must be at least 8 characters long. ")
-	private String name;
 	@NotBlank(message = "Company name must be required")
-	private String companyName;
+    private String companyName;
+	@NotBlank(message = "Password is required")
+    @Size(min = 8,max = 200, message = "Password must be at least 8 characters long. ")
+	private String name;
 	@NotBlank(message = "Connect your wallet")
 	private String walletAddres;
 	@NotEmpty(message = "stake Amount is not $0.0")
@@ -37,6 +36,10 @@ public class Advertiser {
     private Double stakeAmount;
 	@NotBlank(message = "contact number must be required")
     private String mobile;
+	@Lob
+	private byte[] imageData;
+	private String imageName;
+	private String imageType;
 	
 	@OneToOne(mappedBy = "advertiser")
 	private User user;
