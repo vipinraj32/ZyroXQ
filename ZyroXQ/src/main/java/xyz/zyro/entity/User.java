@@ -38,7 +38,7 @@ public class User implements UserDetails {
 	@NotBlank(message = "Email is required")
     @Email(message = "Please enter a valid email address")
 	private String email;
-	@NotBlank(message = "Name is required")
+//	@NotBlank(message = "Name is required")
 	private String userName;
 	private String password;
 	private Integer roleId;
@@ -72,7 +72,10 @@ public class User implements UserDetails {
 	@Override
 	public String getUsername() {
 		// TODO Auto-generated method stub
+		if(userName!=null)
 		return userName;
+		
+	  return email;
 	}
 
 	public String getEmail() {

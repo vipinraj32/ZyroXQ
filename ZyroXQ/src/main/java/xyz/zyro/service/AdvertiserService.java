@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import xyz.zyro.controller.AdvertiserController;
 import xyz.zyro.dto.AdvertiserDTO;
 import xyz.zyro.entity.Advertiser;
@@ -14,6 +15,7 @@ import xyz.zyro.repository.UserRepository;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class AdvertiserService {
 
     private AdvertiserRepository advertiserRepository;
@@ -29,7 +31,15 @@ public class AdvertiserService {
     	userRepository.save(user);
     	}
     	
-    	return new AdvertiserDTO(advertiser.getName(),advertiser.getCompanyName(),advertiser.getWalletAddres(),advertiser.getStakeAmount(),advertiser.getMobile(),advertiser.getImageData(),advertiser.getImageName());
+    	return new AdvertiserDTO(advertiser.getCompanyName(),advertiser.getWalletAddres(),advertiser.getImageData(),advertiser.getImageName());
     }
     
+    public AdvertiserDTO  getProfileDetails(String email) {
+   
+    	User user=userRepository.findByEmail(email).orElseThrow(()->new ResourceNotFoundException("Failed To fetch:"+email+" details"));
+    	Advertiser advertiser=user.getAdvertiser();
+    	log.info(advertiser.getCompanyName());
+    	return new AdvertiserDTO(advertiser.getCompanyName(),advertiser.getWalletAddres(),advertiser.getImageData(),advertiser
+    			.getImageName());
+    }
 }

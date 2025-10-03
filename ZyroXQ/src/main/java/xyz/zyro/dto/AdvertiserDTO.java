@@ -13,11 +13,8 @@ import lombok.NoArgsConstructor;
 @Builder
 public class AdvertiserDTO {
 
-	private String name;
 	private String companyName;
 	private String walletAddres;
-    private Double stakeAmount;
-    private String mobile;
     private byte[] profileImage;
     private String imageName;
 }

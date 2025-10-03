@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,14 +19,15 @@ import xyz.zyro.entity.Advertiser;
 import xyz.zyro.exception.CustomIOException;
 import xyz.zyro.service.AdvertiserService;
 @RestController
-@RequestMapping("/advestiser")
+@RequestMapping("/advertiser")
+@CrossOrigin(origins = "http://localhost:8081")
 public class AdvertiserController {
 	
 	@Autowired
 	private AdvertiserService service;
 	
 	@PostMapping("/update-details")
-	public ResponseEntity<AdvertiserDTO> updateAdvertiser(@Valid @RequestParam("companyName")String companyName, @RequestParam("name")String name, @RequestParam("walletAdress")String walletAddess, @RequestParam("stackAmount")Double stackAmount, @RequestParam("mobile")String mobile, @RequestParam("file")MultipartFile file , @RequestParam("email")String email){
+	public ResponseEntity<AdvertiserDTO> updateAdvertiser(@Valid @RequestParam("companyName")String companyName, @RequestParam("file")MultipartFile file , @RequestParam("email")String email){
 		byte[] filedata;
 		try {
 		filedata=file.getBytes();
@@ -34,15 +36,18 @@ public class AdvertiserController {
 		}
 		Advertiser advertiser=Advertiser.builder()
 				.companyName(companyName)
-				.name(name)
-				.walletAddres(walletAddess)
-				.stakeAmount(stackAmount)
-				.mobile(mobile)
 				.imageData(filedata)
 				.imageName(file.getOriginalFilename())
 				.imageType(file.getContentType())
 				.build();
 		return ResponseEntity.ok(service.updateAdvertiserDetails(advertiser, email));
+	}
+	
+	@GetMapping("/get-details")
+	public ResponseEntity<AdvertiserDTO> getProfileDetails(@RequestParam String email) {
+		
+		return ResponseEntity.ok(service.getProfileDetails(email));
+				
 	}
 	
 	

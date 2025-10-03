@@ -20,6 +20,7 @@ import xyz.zyro.dto.Response;
 import xyz.zyro.entity.User;
 import xyz.zyro.entity.type.AuthProviderType;
 import xyz.zyro.entity.type.Role;
+import xyz.zyro.exception.ResourceAlreadyExistException;
 import xyz.zyro.exception.ResourceNotFoundException;
 import xyz.zyro.repository.RoleRepository;
 import xyz.zyro.repository.UserRepository;
@@ -59,7 +60,7 @@ public class AuthenticatService {
 	   public User signUpInternal(LoginRequest signupRequestDto, AuthProviderType authProviderType,String name, String providerId, Integer roleId) {
 	        User user = userRepository.findById(signupRequestDto.getEmail()).orElse(null);
 
-	        if(user != null) throw new IllegalArgumentException("User already exists");
+	        if(user != null) throw new ResourceAlreadyExistException("User already exists");
 	         Role role=roleRepository.findById(roleId).orElse(null);
 	        user = User.builder()
 	                .email(signupRequestDto.getEmail())

@@ -6,6 +6,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.annotation.Generated;
+import xyz.zyro.dto.AdvertiserDTO;
 import xyz.zyro.dto.LoginRequest;
 import xyz.zyro.dto.Response;
 import xyz.zyro.entity.User;
@@ -20,6 +22,7 @@ import xyz.zyro.service.AuthenticatService;
 
 @RestController
 @RequestMapping("/user")
+@CrossOrigin(origins = "*")
 public class AuthenticateController {
 
 	@Autowired
@@ -36,7 +39,7 @@ public class AuthenticateController {
 		Map<String,Object>response= new HashMap<>();
 		response.put("message","Successfully Register");
 		response.put("status",HttpStatus.CREATED.value());
-	    return ResponseEntity.ok(response);	
+	    return ResponseEntity.status(HttpStatus.CREATED).body(response);	
 	} 
 	
 	@GetMapping("/showAll")
@@ -44,5 +47,4 @@ public class AuthenticateController {
 		return ResponseEntity.ok("Show All called");
 	}
 	
-
 }

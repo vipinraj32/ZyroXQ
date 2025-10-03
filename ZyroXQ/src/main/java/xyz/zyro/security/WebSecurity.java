@@ -38,6 +38,8 @@ public class WebSecurity {
 	                .authorizeHttpRequests(auth -> auth
 	                        .requestMatchers("/user/login","/user/advertiser/login","/user/signup").permitAll()
 	                        .requestMatchers(HttpMethod.POST, "/influncer/update-details").authenticated() 
+	                        .requestMatchers(HttpMethod.POST, "/advertiser/update-details").authenticated()
+	                        .requestMatchers(HttpMethod.POST, "/advertiser/get-details").authenticated()
 	                        .anyRequest().authenticated()
 	                )
 	                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
