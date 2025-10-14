@@ -13,7 +13,7 @@ import org.springframework.web.client.RestTemplate;
 @RequestMapping("/user")
 public class ApifyController {
 
-	 private static final String APIFY_TOKEN = "apify_api_VZl4DOACeZqiT7WcX7sWgUlaYpMPbi2LFGmK";
+	 private static final String APIFY_TOKEN = "apify_api";
 	    private static final String ACTOR_ID = "shu8hvrXbJbY3Eb9W";
 
 	    private final RestTemplate restTemplate = new RestTemplate();
