@@ -23,4 +23,6 @@ public class AllDetailsController {
 		return ResponseEntity.ok(service.getProfileDetails("vipendrarajpoot2@gmail.com"));
 				
 	}
+	
+	
 }
