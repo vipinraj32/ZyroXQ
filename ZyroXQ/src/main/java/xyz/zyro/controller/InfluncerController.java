@@ -37,4 +37,6 @@ public class InfluncerController {
 	public ResponseEntity<InstagramMediaResponseDTO> getMedia(@RequestParam("username")String username){
 		return ResponseEntity.ok(service.getMediaResponse(username));
 	}
+	
+//	public ResponseEntity<?> submitLink()
 }
