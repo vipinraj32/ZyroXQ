@@ -38,5 +38,5 @@ public class InfluncerController {
 		return ResponseEntity.ok(service.getMediaResponse(username));
 	}
 	
-//	public ResponseEntity<?> submitLink()
+
 }
