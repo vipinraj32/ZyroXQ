@@ -23,7 +23,7 @@ public class CacheConfig {
 	public CacheManager cacheManager(RedisConnectionFactory redisConnectionFactory) {
 		RedisCacheConfiguration redisConfiguration=RedisCacheConfiguration.defaultCacheConfig()
 				.prefixCacheNameWith("my-redis")
-				.entryTtl(Duration.ofSeconds(60))
+				.entryTtl(Duration.ofSeconds(100))
 				.serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
 				.serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer())	);
 		return RedisCacheManager.builder(redisConnectionFactory)
