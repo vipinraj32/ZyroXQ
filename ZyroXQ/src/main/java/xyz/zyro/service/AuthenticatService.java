@@ -50,8 +50,8 @@ public class AuthenticatService {
 	private  OAuth2AuthorizedClientService authorizedClientService;
 	
 	public Response login(LoginRequest request) {
-//		log.info(request.getPassword());
-//		User u=userRepository.findByEmailAndPassword(request.getEmail(), request.getPassword()).orElseThrow(()->new ResourceNotFoundException("Invlid email/password"));
+		log.info(request.getPassword());
+		User u=userRepository.findByEmailAndPassword(request.getEmail(), request.getPassword()).orElseThrow(()->new ResourceNotFoundException("Invlid email/password"));
 		
 	     Authentication authentication = authenticationManager.authenticate(
 	                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
