@@ -57,4 +57,8 @@ public class InfluncerService {
 		RestTemplate template=new RestTemplate();
 		return template.getForObject(url, InstagramMediaResponseDTO.class);
 	}
+	
+	public String submitUrl() {
+		return "";
+	}
 }
