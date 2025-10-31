@@ -1,0 +1,653 @@
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Logo } from "@/components/ui/logo";
+import { 
+  PlayCircle, 
+  Video, 
+  History, 
+  Activity, 
+  Plus,
+  Eye,
+  Calendar,
+  DollarSign,
+  TrendingUp,
+  LogOut,
+  User,
+  Home,
+  Settings,
+  Menu,
+  X,
+  Wallet,
+  Zap
+} from "lucide-react";
+import { escrowService, Campaign } from "@/lib/escrow";
+
+interface AdvertiserDetails {
+  companyName: string;
+  walletAddres: string | null; // Note: API has typo "walletAddres" instead of "walletAddress"
+  profileImage: string; // Base64 encoded image data
+  imageName: string;
+}
+
+export const AdvertiserDashboard = () => {
+  const [userData, setUserData] = useState<any>(null);
+  const [advertiserDetails, setAdvertiserDetails] = useState<AdvertiserDetails | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [walletConnected, setWalletConnected] = useState(false);
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [walletBalance, setWalletBalance] = useState<string>("0");
+  const [blockchainCampaigns, setBlockchainCampaigns] = useState<Campaign[]>([]);
+
+  useEffect(() => {
+    // Get user data from session storage
+    const email = sessionStorage.getItem('email');
+    const username = sessionStorage.getItem('username');
+    const role = sessionStorage.getItem('role');
+    const profileStatus = sessionStorage.getItem('profileStatus');
+
+    if (profileStatus !== 'true' || role !== '[ROLE_ADVERTISER]') {
+      window.location.href = '/login';
+      return;
+    }
+
+    setUserData({ email, username, role });
+    
+    // Fetch advertiser details
+    fetchAdvertiserDetails(email);
+    
+    // Try to connect wallet automatically
+    checkWalletConnection();
+  }, []);
+
+  const checkWalletConnection = async () => {
+    try {
+      if (typeof window.ethereum !== 'undefined') {
+        const connected = await escrowService.connectWallet();
+        if (connected) {
+          setWalletConnected(true);
+          const address = await escrowService.getWalletAddress();
+          const balance = await escrowService.getBalance();
+          setWalletAddress(address);
+          setWalletBalance(balance);
+          
+          // Load blockchain campaigns
+          if (address) {
+            loadBlockchainCampaigns(address);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Wallet connection check failed:', error);
+    }
+  };
+
+  const connectWallet = async () => {
+    try {
+      const connected = await escrowService.connectWallet();
+      if (connected) {
+        setWalletConnected(true);
+        const address = await escrowService.getWalletAddress();
+        const balance = await escrowService.getBalance();
+        setWalletAddress(address);
+        setWalletBalance(balance);
+        
+        if (address) {
+          loadBlockchainCampaigns(address);
+        }
+      }
+    } catch (error: any) {
+      setError(`Failed to connect wallet: ${error.message}`);
+    }
+  };
+
+  const loadBlockchainCampaigns = async (address: string) => {
+    try {
+      const userCampaigns = await escrowService.getUserCampaigns(address);
+      setBlockchainCampaigns(userCampaigns);
+    } catch (error) {
+      console.error('Failed to load blockchain campaigns:', error);
+    }
+  };
+
+  const fetchAdvertiserDetails = async (email: string | null) => {
+    if (!email) {
+      setError('Email not found in session');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch(`/api/advertiser/get-details?email=${encodeURIComponent(email)}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const details = await response.json();
+        console.log('Advertiser details:', details);
+        console.log('Profile image data length:', details.profileImage?.length);
+        console.log('Image name:', details.imageName);
+        setAdvertiserDetails(details);
+      } else {
+        console.error('Failed to fetch advertiser details');
+        setError('Failed to load profile details');
+      }
+    } catch (error) {
+      console.error('Error fetching advertiser details:', error);
+      setError('Network error while loading profile');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    sessionStorage.clear();
+    window.location.href = '/';
+  };
+
+  const handleCreateCampaign = (type: string) => {
+    console.log(`Creating ${type} campaign`);
+    // All campaigns are blockchain-based now
+    window.location.href = '/create-blockchain-campaign';
+  };
+
+  const handleCancelCampaign = async (campaignId: number) => {
+    if (!walletConnected) {
+      setError('Please connect your wallet first');
+      return;
+    }
+
+    try {
+      const result = await escrowService.cancelCampaign(campaignId);
+      if (result.success) {
+        // Refresh campaigns
+        if (walletAddress) {
+          loadBlockchainCampaigns(walletAddress);
+        }
+        // Show success message
+        console.log('Campaign cancelled successfully');
+      } else {
+        setError(result.error || 'Failed to cancel campaign');
+      }
+    } catch (error: any) {
+      setError(`Failed to cancel campaign: ${error.message}`);
+    }
+  };
+
+  if (!userData) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-hero">
+      {/* Sidebar */}
+      <div className={
+        "bg-card/95 backdrop-blur-sm border-r border-border/50 transition-all duration-300 " +
+        (sidebarOpen ? 'w-64' : 'w-20') +
+        " flex flex-col h-screen fixed left-0 top-0 z-10"
+      }>
+        {/* Sidebar Header */}
+        <div className="p-6 border-b border-border/50 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div className={`flex items-center gap-3 ${!sidebarOpen && 'justify-center'}`}>
+              <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                <Logo size="sm" />
+              </div>
+              {sidebarOpen && (
+                <div>
+                  <h2 className="text-lg font-semibold text-foreground">ZyroXQ</h2>
+                  <p className="text-xs text-muted-foreground">Advertiser Portal</p>
+                </div>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              {sidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            </Button>
+          </div>
+        </div>
+
+        {/* User Profile Section */}
+        <div className="p-4 border-b border-border/50 flex-shrink-0">
+          <div className={`flex items-center gap-3 ${!sidebarOpen && 'justify-center'}`}>
+            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-primary to-primary-glow flex items-center justify-center overflow-hidden border-2 border-primary/20 relative">
+              {isLoading ? (
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+              ) : advertiserDetails?.profileImage ? (
+                <img 
+                  src={`data:image/png;base64,${advertiserDetails.profileImage}`}
+                  alt={advertiserDetails.imageName || 'Company Logo'}
+                  className="w-full h-full object-cover rounded-full"
+                  onError={(e) => {
+                    console.error('Failed to load profile image:', e);
+                    // Hide the broken image
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              ) : null}
+              {/* Fallback icon */}
+              <div className={`absolute inset-0 flex items-center justify-center ${advertiserDetails?.profileImage ? 'opacity-0' : 'opacity-100'} transition-opacity`}>
+                <User className="w-6 h-6 text-white" />
+              </div>
+            </div>
+            {sidebarOpen && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">
+                  {isLoading ? 'Loading...' : advertiserDetails?.companyName || userData?.username || 'Company Name'}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {userData?.email}
+                </p>
+                {advertiserDetails?.walletAddres && (
+                  <p className="text-xs text-primary truncate">
+                    Wallet: {advertiserDetails.walletAddres.slice(0, 6)}...{advertiserDetails.walletAddres.slice(-4)}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+          {error && sidebarOpen && (
+            <p className="text-xs text-destructive mt-2">{error}</p>
+          )}
+        </div>
+
+        {/* Wallet Section */}
+        <div className="p-4 border-b border-border/50 flex-shrink-0">
+          {walletConnected ? (
+            <div className={`space-y-2 ${!sidebarOpen && 'hidden'}`}>
+              <div className="flex items-center gap-2">
+                <Wallet className="w-4 h-4 text-primary" />
+                <span className="text-xs font-medium text-foreground">Wallet Connected</span>
+              </div>
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p className="truncate">
+                  {walletAddress?.slice(0, 6)}...{walletAddress?.slice(-4)}
+                </p>
+                <p className="flex items-center gap-1">
+                  <Zap className="w-3 h-3" />
+                  {parseFloat(walletBalance).toFixed(4)} ETH
+                </p>
+              </div>
+            </div>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={connectWallet}
+              className={`w-full ${!sidebarOpen && 'px-2'}`}
+            >
+              <Wallet className="w-4 h-4" />
+              {sidebarOpen && <span className="ml-2">Connect Wallet</span>}
+            </Button>
+          )}
+        </div>
+
+        {/* Navigation Menu */}
+        <nav className="flex-1 p-4 overflow-y-auto">
+          <div className="space-y-2">
+            <Button
+              variant="ghost"
+              className={
+                "w-full justify-start gap-3 text-foreground bg-primary/10 " +
+                (!sidebarOpen ? 'px-3' : '')
+              }
+            >
+              <Home className="w-5 h-5" />
+              {sidebarOpen && "Dashboard"}
+            </Button>
+            <Button
+              variant="ghost"
+              className={`w-full justify-start gap-3 text-muted-foreground hover:text-foreground ${
+                !sidebarOpen && 'px-3'
+              }`}
+            >
+              <Activity className="w-5 h-5" />
+              {sidebarOpen && "Campaigns"}
+            </Button>
+            <Button
+              variant="ghost"
+              className={`w-full justify-start gap-3 text-muted-foreground hover:text-foreground ${
+                !sidebarOpen && 'px-3'
+              }`}
+            >
+              <TrendingUp className="w-5 h-5" />
+              {sidebarOpen && "Analytics"}
+            </Button>
+            <Button
+              variant="ghost"
+              className={`w-full justify-start gap-3 text-muted-foreground hover:text-foreground ${
+                !sidebarOpen && 'px-3'
+              }`}
+            >
+              <History className="w-5 h-5" />
+              {sidebarOpen && "History"}
+            </Button>
+            <Button
+              variant="ghost"
+              className={`w-full justify-start gap-3 text-muted-foreground hover:text-foreground ${
+                !sidebarOpen && 'px-3'
+              }`}
+            >
+              <Settings className="w-5 h-5" />
+              {sidebarOpen && "Settings"}
+            </Button>
+          </div>
+        </nav>
+
+        {/* Fixed Logout Button at Bottom */}
+        <div className="p-4 border-t border-border/50 flex-shrink-0 mt-auto">
+          <Button
+            variant="ghost"
+            onClick={handleLogout}
+            className={
+              "w-full justify-start gap-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors " +
+              (!sidebarOpen ? 'px-3' : '')
+            }
+          >
+            <LogOut className="w-5 h-5" />
+            {sidebarOpen && "Logout"}
+          </Button>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className={
+        "flex-1 overflow-auto transition-all duration-300 " +
+        (sidebarOpen ? 'ml-64' : 'ml-20')
+      }>
+        {/* Top Bar */}
+        <div className="bg-card/50 backdrop-blur-sm border-b border-border/50 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+              <p className="text-muted-foreground">
+                Welcome back, {isLoading ? 'Loading...' : advertiserDetails?.companyName || userData?.username}
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              <Badge variant="secondary" className="bg-primary/20 text-primary">
+                {blockchainCampaigns.filter(c => !c.cancelled && Date.now() / 1000 < c.deadline).length} Active Campaigns
+              </Badge>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6">
+          {/* Quick Actions */}
+          <div className="mb-8">
+            <h2 className="text-xl font-bold text-foreground mb-6">Create New Campaign</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Card className="bg-gradient-card border-border/50 hover:shadow-primary/20 hover:shadow-lg transition-all cursor-pointer group">
+              <CardContent className="p-6 text-center">
+                <div className="mb-4">
+                  <Zap className="w-12 h-12 text-primary mx-auto group-hover:scale-110 transition-transform" />
+                </div>
+                <h3 className="font-semibold text-foreground mb-2">Story Campaign</h3>
+                <p className="text-sm text-muted-foreground mb-4">Create story-focused campaign with smart contract escrow</p>
+                <Button 
+                  variant="hero" 
+                  size="sm" 
+                  className="w-full"
+                  onClick={() => handleCreateCampaign('Story')}
+                  disabled={!walletConnected}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {walletConnected ? 'Create Story' : 'Connect Wallet'}
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-card border-border/50 hover:shadow-primary/20 hover:shadow-lg transition-all cursor-pointer group">
+              <CardContent className="p-6 text-center">
+                <div className="mb-4">
+                  <Video className="w-12 h-12 text-primary mx-auto group-hover:scale-110 transition-transform" />
+                </div>
+                <h3 className="font-semibold text-foreground mb-2">Video Campaign</h3>
+                <p className="text-sm text-muted-foreground mb-4">Create video-focused campaign with smart contract escrow</p>
+                <Button 
+                  variant="hero" 
+                  size="sm" 
+                  className="w-full"
+                  onClick={() => handleCreateCampaign('Video')}
+                  disabled={!walletConnected}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {walletConnected ? 'Create Video' : 'Connect Wallet'}
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-card border-border/50 hover:shadow-primary/20 hover:shadow-lg transition-all cursor-pointer group">
+              <CardContent className="p-6 text-center">
+                <div className="mb-4">
+                  <PlayCircle className="w-12 h-12 text-primary mx-auto group-hover:scale-110 transition-transform" />
+                </div>
+                <h3 className="font-semibold text-foreground mb-2">Reel Campaign</h3>
+                <p className="text-sm text-muted-foreground mb-4">Create reel-focused campaign with smart contract escrow</p>
+                <Button 
+                  variant="hero" 
+                  size="sm" 
+                  className="w-full"
+                  onClick={() => handleCreateCampaign('Reel')}
+                  disabled={!walletConnected}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {walletConnected ? 'Create Reel' : 'Connect Wallet'}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+            <Card className="bg-gradient-card border-border/50 hover:shadow-primary/20 hover:shadow-lg transition-all cursor-pointer group">
+              <CardContent className="p-6 text-center">
+                <div className="mb-4">
+                  <Video className="w-12 h-12 text-primary mx-auto group-hover:scale-110 transition-transform" />
+                </div>
+                <h3 className="font-semibold text-foreground mb-2">Video Promotion</h3>
+                <p className="text-sm text-muted-foreground mb-4">Create engaging video content campaigns</p>
+                <Button 
+                  variant="hero" 
+                  size="sm" 
+                  className="w-full"
+                  onClick={() => handleCreateCampaign('Video')}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Video Campaign
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-card border-border/50 hover:shadow-primary/20 hover:shadow-lg transition-all cursor-pointer group">
+              <CardContent className="p-6 text-center">
+                <div className="mb-4">
+                  <PlayCircle className="w-12 h-12 text-primary mx-auto group-hover:scale-110 transition-transform" />
+                </div>
+                <h3 className="font-semibold text-foreground mb-2">Reel Promotion</h3>
+                <p className="text-sm text-muted-foreground mb-4">Short-form content for maximum reach</p>
+                <Button 
+                  variant="hero" 
+                  size="sm" 
+                  className="w-full"
+                  onClick={() => handleCreateCampaign('Reel')}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Reel Campaign
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-card border-border/50 hover:shadow-primary/20 hover:shadow-lg transition-all cursor-pointer group">
+              <CardContent className="p-6 text-center">
+                <div className="mb-4">
+                  <TrendingUp className="w-12 h-12 text-primary mx-auto group-hover:scale-110 transition-transform" />
+                </div>
+                <h3 className="font-semibold text-foreground mb-2">Multi-Platform</h3>
+                <p className="text-sm text-muted-foreground mb-4">Cross-platform campaign management</p>
+                <Button 
+                  variant="hero" 
+                  size="sm" 
+                  className="w-full"
+                  onClick={() => handleCreateCampaign('Multi-Platform')}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Campaign
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Blockchain Campaigns */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+              <Zap className="w-6 h-6 text-primary" />
+              Your Campaigns
+            </h2>
+            {walletConnected ? (
+              <Badge variant="secondary" className="bg-primary/20 text-primary">
+                {blockchainCampaigns.length} Total
+              </Badge>
+            ) : (
+              <Button variant="outline" size="sm" onClick={connectWallet}>
+                Connect Wallet to View
+              </Button>
+            )}
+          </div>
+          
+          {walletConnected ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {blockchainCampaigns.length > 0 ? (
+                blockchainCampaigns.map((campaign) => (
+                  <Card key={campaign.id} className="bg-gradient-card border-border/50">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg text-foreground">
+                          Campaign #{campaign.id}
+                        </CardTitle>
+                        <Badge 
+                          variant={campaign.cancelled ? "destructive" : 
+                                 Date.now() / 1000 > campaign.deadline ? "outline" : "default"}
+                          className={
+                            campaign.cancelled ? "bg-red-500/20 text-red-500" :
+                            Date.now() / 1000 > campaign.deadline ? "border-orange-500 text-orange-500" :
+                            "bg-green-500/20 text-green-500"
+                          }
+                        >
+                          {campaign.cancelled ? "Cancelled" : 
+                           Date.now() / 1000 > campaign.deadline ? "Expired" : "Active"}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {campaign.textRequirements || "No requirements specified"}
+                      </p>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-3 gap-4 mb-4">
+                        <div className="text-center">
+                          <DollarSign className="w-4 h-4 text-primary mx-auto mb-1" />
+                          <p className="text-sm font-semibold text-foreground">
+                            {parseFloat(campaign.budget).toFixed(4)} ETH
+                          </p>
+                          <p className="text-xs text-muted-foreground">Budget</p>
+                        </div>
+                        <div className="text-center">
+                          <User className="w-4 h-4 text-primary mx-auto mb-1" />
+                          <p className="text-sm font-semibold text-foreground">
+                            {campaign.maxInfluencers}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Max Influencers</p>
+                        </div>
+                        <div className="text-center">
+                          <Calendar className="w-4 h-4 text-primary mx-auto mb-1" />
+                          <p className="text-sm font-semibold text-foreground">
+                            {new Date(campaign.deadline * 1000).toLocaleDateString()}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Deadline</p>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2 mb-4">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Min Followers:</span>
+                          <span className="text-foreground">{campaign.minFollowers.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Payout per Influencer:</span>
+                          <span className="text-foreground">{parseFloat(campaign.perInfluencerPayout).toFixed(4)} ETH</span>
+                        </div>
+                        {campaign.mustIncludeAsset && (
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">Must Include:</span>
+                            <span className="text-foreground truncate">{campaign.mustIncludeAsset}</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" className="flex-1">
+                          View Details
+                        </Button>
+                        {!campaign.cancelled && Date.now() / 1000 < campaign.deadline && (
+                          <Button 
+                            variant="destructive" 
+                            size="sm" 
+                            className="flex-1"
+                            onClick={() => handleCancelCampaign(campaign.id)}
+                          >
+                            Cancel
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <div className="col-span-2 text-center py-8">
+                  <Zap className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No campaigns yet.</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Create your first campaign to get started!
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Wallet className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground mb-4">Connect your wallet to view campaigns</p>
+              <Button onClick={connectWallet} variant="hero">
+                <Wallet className="w-4 h-4 mr-2" />
+                Connect Wallet
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AdvertiserDashboard;
