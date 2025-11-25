@@ -43,10 +43,10 @@ public class AdvertiserService {
     			.getImageName());
     }
     
-    public String updateWalletAddress(String walletAddress, String companyName) {
-    	Advertiser advertiser=advertiserRepository.findById(companyName).orElseThrow(()->new ResourceNotFoundException("Company Not Register with name:"+companyName));
-    	advertiser.setWalletAddres(walletAddress);
-    	advertiserRepository.save(advertiser);
-    	return advertiser.getWalletAddres();
-    }
+//    public String updateWalletAddress(String walletAddress, String companyName) {
+//    	Advertiser advertiser=advertiserRepository.findById(companyName).orElseThrow(()->new ResourceNotFoundException("Company Not Register with name:"+companyName));
+//    	advertiser.setWalletAddres(walletAddress);
+//    	advertiserRepository.save(advertiser);
+//    	return advertiser.getWalletAddres();
+//    }
 }
