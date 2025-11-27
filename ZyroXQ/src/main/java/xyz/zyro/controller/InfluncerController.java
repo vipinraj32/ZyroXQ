@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.validation.Valid;
 import xyz.zyro.dto.InfluncerDTO;
 import xyz.zyro.dto.InstagramMediaResponseDTO;
+import xyz.zyro.dto.MediaDTO;
 import xyz.zyro.dto.ProfileDetailsDTO;
 import xyz.zyro.entity.Influncer;
 import xyz.zyro.service.InfluncerService;
@@ -36,6 +37,12 @@ public class InfluncerController {
 	@GetMapping("/media")
 	public ResponseEntity<InstagramMediaResponseDTO> getMedia(@RequestParam("username")String username){
 		return ResponseEntity.ok(service.getMediaResponse(username));
+	}
+	
+	@GetMapping("/submit-response")
+	public ResponseEntity<?> setSubmitResponse(@RequestBody MediaDTO media){
+		return service.submitMedia(media);
+		
 	}
 	
 

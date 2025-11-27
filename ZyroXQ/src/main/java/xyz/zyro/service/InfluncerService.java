@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import xyz.zyro.dto.InfluncerDTO;
 import xyz.zyro.dto.InstagramMediaResponseDTO;
+import xyz.zyro.dto.MediaDTO;
 import xyz.zyro.dto.ProfileDetailsDTO;
 import xyz.zyro.entity.Influncer;
 import xyz.zyro.entity.User;
@@ -58,5 +59,7 @@ public class InfluncerService {
 		return template.getForObject(url, InstagramMediaResponseDTO.class);
 	}
 	
-	
+	public String submitMedia(MediaDTO media) {
+		return "";
+	}
 }
