@@ -39,11 +39,11 @@ public class InfluncerController {
 		return ResponseEntity.ok(service.getMediaResponse(username));
 	}
 	
-	@GetMapping("/submit-response")
-	public ResponseEntity<?> setSubmitResponse(@RequestBody MediaDTO media){
-		return service.submitMedia(media);
-		
-	}
+//	@GetMapping("/submit-response")
+//	public ResponseEntity<?> setSubmitResponse(@RequestBody MediaDTO media){
+//		return service.submitMedia(media);
+//		
+//	}
 	
 
 }
