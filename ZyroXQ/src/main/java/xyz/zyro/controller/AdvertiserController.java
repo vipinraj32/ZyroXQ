@@ -1,8 +1,10 @@
 package xyz.zyro.controller;
 
 import java.io.IOException;
+import java.time.LocalDate;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -58,7 +60,8 @@ public class AdvertiserController {
 	}
 	
 	@PostMapping("/create-campaign")
-	public ResponseEntity<String> createCampaign(@RequestBody @Valid CampaignCreateDTO dto,@RequestParam("file") MultipartFile file){
+	public ResponseEntity<String> createCampaign(@RequestParam("companyName") @Valid String companyName,@RequestParam("requirment")@Valid String requirment, @RequestParam("date")@DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date ,@RequestParam("campaignType")@Valid String campaignType, @RequestParam("totalCampaign")Integer totalCampaign, @RequestParam("view")@Valid Integer view, @RequestParam("amount")@Valid Integer amount,  @RequestParam("file") MultipartFile file){
+		CampaignCreateDTO dto=new CampaignCreateDTO(companyName,requirment,date,campaignType,totalCampaign,view,amount);
 		return ResponseEntity.ok(service.createCampaign(dto, file));
 	}
 	

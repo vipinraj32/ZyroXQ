@@ -65,7 +65,7 @@ public class AdvertiserService {
     
     public String createCampaign(CampaignCreateDTO dto, MultipartFile file) {
     	try {
-    		IPFS ipfs=ipfsConfig.IPFSConfig();
+    		IPFS ipfs=ipfsConfig.IPFSConfigs();
     		InputStream inputStream = new ByteArrayInputStream(file.getBytes());
     		NamedStreamable.InputStreamWrapper is = new NamedStreamable.InputStreamWrapper(inputStream);
             MerkleNode response = ipfs.add(is).get(0);
