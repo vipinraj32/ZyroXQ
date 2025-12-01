@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.validation.Valid;
 import xyz.zyro.dto.AdvertiserDTO;
+import xyz.zyro.dto.CampaignCreateDTO;
 import xyz.zyro.entity.Advertiser;
 import xyz.zyro.exception.CustomIOException;
 import xyz.zyro.service.AdvertiserService;
@@ -54,6 +55,11 @@ public class AdvertiserController {
 	public ResponseEntity<String> updateWalletAddress(@RequestParam("compnayName")String companyName, @RequestParam("walletAddress")String walletAddress){	
 		return ResponseEntity.ok(service.updateWalletAddress(walletAddress, companyName));
 		
+	}
+	
+	@PostMapping("/create-campaign")
+	public ResponseEntity<String> createCampaign(@RequestBody @Valid CampaignCreateDTO dto,@RequestParam("file") MultipartFile file){
+		return ResponseEntity.ok(service.createCampaign(dto, file));
 	}
 	
 }
