@@ -59,7 +59,7 @@ public class InfluncerService {
 		return template.getForObject(url, InstagramMediaResponseDTO.class);
 	}
 	
-	public String submitMedia(MediaDTO media) {
-		return "";
-	}
+//	public String submitMedia(MediaDTO media) {
+//		return "";
+//	}
 }
