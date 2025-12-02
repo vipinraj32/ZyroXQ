@@ -59,10 +59,16 @@ public class AdvertiserController {
 		
 	}
 	
-	@PostMapping("/create-campaign")
+	@GetMapping("/create-campaign")
 	public ResponseEntity<String> createCampaign(@RequestParam("companyName") @Valid String companyName,@RequestParam("requirment")@Valid String requirment, @RequestParam("date")@DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date ,@RequestParam("campaignType")@Valid String campaignType, @RequestParam("totalCampaign")Integer totalCampaign, @RequestParam("view")@Valid Integer view, @RequestParam("amount")@Valid Integer amount,  @RequestParam("file") MultipartFile file){
 		CampaignCreateDTO dto=new CampaignCreateDTO(companyName,requirment,date,campaignType,totalCampaign,view,amount);
 		return ResponseEntity.ok(service.createCampaign(dto, file));
 	}
 	
+	
+	@GetMapping("/create")
+	public ResponseEntity<String> create(@RequestParam("file") MultipartFile file){
+		
+		return ResponseEntity.ok(service.create(file));
+	}
 }

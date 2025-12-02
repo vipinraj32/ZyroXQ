@@ -3,11 +3,17 @@ package xyz.zyro.service;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.List;
 
 import javax.management.RuntimeErrorException;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import io.ipfs.api.IPFS;
 import io.ipfs.api.MerkleNode;
@@ -64,6 +70,36 @@ public class AdvertiserService {
     
     
     public String createCampaign(CampaignCreateDTO dto, MultipartFile file) {
+    	try {
+    		IPFS ipfs=ipfsConfig.IPFSConfigs();
+//    		String json = new ObjectMapper().writeValueAsString(dto);
+    		ObjectMapper mapper = new ObjectMapper();
+    		mapper.registerModule(new JavaTimeModule());
+    		mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+    		String json = mapper.writeValueAsString(dto);
+    		NamedStreamable.ByteArrayWrapper metadataFile =
+                    new NamedStreamable.ByteArrayWrapper("metadata.json", json.getBytes());
+    		InputStream inputStream = new ByteArrayInputStream(file.getBytes());
+    		NamedStreamable.InputStreamWrapper is = new NamedStreamable.InputStreamWrapper(inputStream);
+    		List<NamedStreamable> fileList = Arrays.asList(metadataFile, is);
+    		 NamedStreamable.DirWrapper dir = new NamedStreamable.DirWrapper("campaign-folder", fileList);
+//    		List<MerkleNode> nodes = ipfs.add((NamedStreamable) fileList,true);
+//    		MerkleNode response = ipfs.add(is).get(0);
+//    		 return nodes.get(nodes.size() - 1).hash.toString();
+//            return response.hash.toBase58();
+    		 MerkleNode node = ipfs.add(dir).get(0);
+
+    	        return node.hash.toBase58();
+		} catch (Exception e) {
+			// TODO: handle exception
+			throw new RuntimeException("Error whilst communicating with the IPFS node"+e);
+		}
+    	
+    		
+    }
+    
+    public String create(MultipartFile file) {
     	try {
     		IPFS ipfs=ipfsConfig.IPFSConfigs();
     		InputStream inputStream = new ByteArrayInputStream(file.getBytes());
