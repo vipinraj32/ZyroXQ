@@ -72,7 +72,6 @@ public class AdvertiserService {
     public String createCampaign(CampaignCreateDTO dto, MultipartFile file) {
     	try {
     		IPFS ipfs=ipfsConfig.IPFSConfigs();
-//    		String json = new ObjectMapper().writeValueAsString(dto);
     		ObjectMapper mapper = new ObjectMapper();
     		mapper.registerModule(new JavaTimeModule());
     		mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -84,10 +83,6 @@ public class AdvertiserService {
     		NamedStreamable.InputStreamWrapper is = new NamedStreamable.InputStreamWrapper(inputStream);
     		List<NamedStreamable> fileList = Arrays.asList(metadataFile, is);
     		 NamedStreamable.DirWrapper dir = new NamedStreamable.DirWrapper("campaign-folder", fileList);
-//    		List<MerkleNode> nodes = ipfs.add((NamedStreamable) fileList,true);
-//    		MerkleNode response = ipfs.add(is).get(0);
-//    		 return nodes.get(nodes.size() - 1).hash.toString();
-//            return response.hash.toBase58();
     		 MerkleNode node = ipfs.add(dir).get(0);
 
     	        return node.hash.toBase58();
