@@ -79,8 +79,8 @@ public class AdvertiserService {
     		String json = mapper.writeValueAsString(dto);
     		NamedStreamable.ByteArrayWrapper metadataFile =
                     new NamedStreamable.ByteArrayWrapper("metadata.json", json.getBytes());
-    		InputStream inputStream = new ByteArrayInputStream(file.getBytes());
-    		NamedStreamable.InputStreamWrapper is = new NamedStreamable.InputStreamWrapper(inputStream);
+//    		InputStream inputStream = new ByteArrayInputStream(file.getBytes());
+    		NamedStreamable.InputStreamWrapper is = new NamedStreamable.InputStreamWrapper(file.getOriginalFilename(),file.getInputStream());
     		List<NamedStreamable> fileList = Arrays.asList(metadataFile, is);
     		 NamedStreamable.DirWrapper dir = new NamedStreamable.DirWrapper("campaign-folder", fileList);
     		 MerkleNode node = ipfs.add(dir).get(0);
