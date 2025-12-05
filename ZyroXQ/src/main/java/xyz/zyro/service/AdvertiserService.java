@@ -79,13 +79,20 @@ public class AdvertiserService {
     		String json = mapper.writeValueAsString(dto);
     		NamedStreamable.ByteArrayWrapper metadataFile =
                     new NamedStreamable.ByteArrayWrapper("metadata.json", json.getBytes());
-//    		InputStream inputStream = new ByteArrayInputStream(file.getBytes());
+
     		NamedStreamable.InputStreamWrapper is = new NamedStreamable.InputStreamWrapper(file.getOriginalFilename(),file.getInputStream());
     		List<NamedStreamable> fileList = Arrays.asList(metadataFile, is);
+    		log.info(fileList.toString());
     		 NamedStreamable.DirWrapper dir = new NamedStreamable.DirWrapper("campaign-folder", fileList);
-    		 MerkleNode node = ipfs.add(dir).get(0);
+    		 
+    		 List<MerkleNode> nodes = ipfs.add(dir);
 
-    	        return node.hash.toBase58();
+    	        // Directory CID (last node)
+    	        MerkleNode dirNode = nodes.get(nodes.size() - 1);
+    	        return dirNode.hash.toBase58();
+//    		 MerkleNode node = ipfs.add(dir).get(0);
+
+//    	        return node.hash.toBase58();
 		} catch (Exception e) {
 			// TODO: handle exception
 			throw new RuntimeException("Error whilst communicating with the IPFS node"+e);
