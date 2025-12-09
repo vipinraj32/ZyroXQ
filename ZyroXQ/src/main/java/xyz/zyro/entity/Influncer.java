@@ -27,5 +27,6 @@ public class Influncer {
 	private String name;
 	@OneToOne(mappedBy = "influncer")
 	private User user;
-	
+	@OneToMany(mappedBy = "submitId")
+	private CampaignSubmission campaignSubmission;
 }

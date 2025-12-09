@@ -4,10 +4,14 @@ import java.util.Date;
 
 import org.hibernate.annotations.GeneratorType;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -31,6 +35,8 @@ public class CampaignSubmission {
 	private String permaLink;
 	private Date timedstamp;
 	private String paymentStatus;
-	
+	 @ManyToOne(cascade=CascadeType.ALL)
+		@JoinColumn(name = "Influncer_Id", referencedColumnName = "InfluncerId")
+	   private Influncer influncer;
 
 }
