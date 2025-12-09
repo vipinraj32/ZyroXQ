@@ -30,5 +30,7 @@ public class CampaignSubmission {
 	private String mediaUrl;
 	private String permaLink;
 	private Date timedstamp;
+	private String paymentStatus;
+	
 
 }
