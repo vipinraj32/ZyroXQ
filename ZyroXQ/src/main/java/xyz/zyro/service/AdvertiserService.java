@@ -18,6 +18,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.ipfs.api.IPFS;
 import io.ipfs.api.MerkleNode;
 import io.ipfs.api.NamedStreamable;
+import io.ipfs.multihash.Multihash;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -99,6 +100,26 @@ public class AdvertiserService {
 		}
     	
     		
+    }
+    
+    public String fetchDataFromCID(String cid) throws Exception {
+//         Convert CID → MultiHash
+        Multihash filePointer = Multihash.fromBase58(cid);
+
+        // Fetch the raw file bytes
+        byte[] data =ipfsConfig.IPFSConfigs().cat(filePointer);
+        // Convert bytes → String
+        return new String(data);
+    }
+    
+    public <T> T fetchJson(String cid, Class<T> type) throws Exception {
+        Multihash filePointer = Multihash.fromBase58(cid);
+        byte[] data = ipfsConfig.IPFSConfigs().cat(filePointer);
+
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+
+        return mapper.readValue(data, type);
     }
     
     public String create(MultipartFile file) {
