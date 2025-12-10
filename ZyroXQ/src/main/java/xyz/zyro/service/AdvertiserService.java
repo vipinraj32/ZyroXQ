@@ -112,7 +112,7 @@ public class AdvertiserService {
         return new String(data);
     }
     
-    public <T> T fetchJson(String cid, Class<T> type) throws Exception {
+    public CampaignCreateDTO fetchJson(String cid, Class<CampaignCreateDTO> type) throws Exception {
         Multihash filePointer = Multihash.fromBase58(cid);
         byte[] data = ipfsConfig.IPFSConfigs().cat(filePointer);
 

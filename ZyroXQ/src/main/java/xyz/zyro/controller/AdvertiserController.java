@@ -8,6 +8,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -70,5 +71,16 @@ public class AdvertiserController {
 	public ResponseEntity<String> create(@RequestParam("file") MultipartFile file){
 		
 		return ResponseEntity.ok(service.create(file));
+	}
+	
+	@GetMapping("/get/{cid}")
+	public ResponseEntity<?> getDataIPFS(@PathVariable String cid){
+		try {
+			CampaignCreateDTO campaignCreateDTO=service.fetchJson(cid, CampaignCreateDTO.class);
+			return ResponseEntity.ok(campaignCreateDTO);
+		} catch (Exception e) {
+			return ResponseEntity.status(500).body("Error parsing JSON: " + e.getMessage());
+		}
+		
 	}
 }
