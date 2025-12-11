@@ -1,147 +1,160 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.25;
 
-/**
- * @title Escrow Contract
- * @dev A secure and transparent escrow system suitable for influencer–advertiser workflows.
- * Funds are locked until advertiser approves or admin resolves disputes.
- */
-contract Escrow {
-    
-    enum EscrowStatus { 
-        NOT_CREATED,
-        FUNDED,
-        APPROVED,
-        RELEASED,
-        REFUNDED,
-        DISPUTED 
+contract MultiEscrow {
+
+    enum State { Created, Locked, Released, Refunded }
+
+    struct Campaign {
+        address buyer;
+        address influencer;   // updated naming
+        uint256 budget;
+        uint256 depositedAmount;
+        uint256 depositTimestamp;
+        bool influencerVerified;  
+        bool buyerEligible;       
+        State state;
     }
 
-    struct Deal {
-        address advertiser;     // Who deposits funds (payer)
-        address influencer;     // Who receives funds (payee)
-        uint256 amount;         // Locked payment amount
-        EscrowStatus status;    // Current state
-    }
+    mapping(uint256 => Campaign) public campaigns;
+    uint256 public nextCampaignId;
 
-    address public admin; // Escrow arbitrator
-    uint256 public dealCounter;
-    mapping(uint256 => Deal) public deals;
+    address public admin;     // AI/backend/verifier address
 
-    // ------------------ EVENTS ---------------------
-    event DealCreated(uint256 dealId, address advertiser, address influencer, uint256 amount);
-    event DealApproved(uint256 dealId);
-    event FundsReleased(uint256 dealId, uint256 amount);
-    event FundsRefunded(uint256 dealId, uint256 amount);
-    event DealDisputed(uint256 dealId);
+    // Events
+    event CampaignCreated(uint256 indexed id, address buyer, address influencer, uint256 budget);
+    event Deposited(uint256 indexed id, uint256 amount);
+    event Released(uint256 indexed id, uint256 amount);
+    event Refunded(uint256 indexed id, uint256 amount);
+    event InfluencerVerified(uint256 indexed id);
+    event BuyerEligible(uint256 indexed id);
 
     constructor() {
-        admin = msg.sender;  
-    }
-
-    // ------------------ MODIFIERS -------------------
-    modifier onlyAdvertiser(uint256 _dealId) {
-        require(deals[_dealId].advertiser == msg.sender, "Not advertiser");
-        _;
+        admin = msg.sender;
     }
 
     modifier onlyAdmin() {
-        require(msg.sender == admin, "Only admin can perform this");
+        require(msg.sender == admin, "Not authorized");
         _;
     }
 
-    // ------------------ CORE ESCROW LOGIC ---------------------
+    modifier onlyBuyer(uint256 id) {
+        require(msg.sender == campaigns[id].buyer, "Not campaign buyer");
+        _;
+    }
 
-    /**
-     * @notice Create a new escrow deal & lock funds
-     */
-    function createDeal(address _influencer) external payable returns (uint256) {
-        require(msg.value > 0, "Amount must be > 0");
-        require(_influencer != address(0), "Invalid influencer address");
+    modifier inState(uint256 id, State expected) {
+        require(campaigns[id].state == expected, "Invalid state");
+        _;
+    }
 
-        dealCounter++;
-        deals[dealCounter] = Deal({
-            advertiser: msg.sender,
+    // ----------------------
+    // CREATE CAMPAIGN
+    // ----------------------
+    function createCampaign(address _influencer, uint256 _budget) external returns(uint256) {
+        require(_budget > 0, "Budget > 0 required");
+
+        uint256 id = nextCampaignId++;
+
+        campaigns[id] = Campaign({
+            buyer: msg.sender,
             influencer: _influencer,
-            amount: msg.value,
-            status: EscrowStatus.FUNDED
+            budget: _budget,
+            depositedAmount: 0,
+            depositTimestamp: 0,
+            influencerVerified: false,
+            buyerEligible: false,
+            state: State.Created
         });
 
-        emit DealCreated(dealCounter, msg.sender, _influencer, msg.value);
-        return dealCounter;
+        emit CampaignCreated(id, msg.sender, _influencer, _budget);
+        return id;
     }
 
-    /**
-     * @notice Advertiser approves influencer's delivery
-     */
-    function approveWork(uint256 _dealId) external onlyAdvertiser(_dealId) {
-        Deal storage d = deals[_dealId];
-        require(d.status == EscrowStatus.FUNDED, "Deal not funded");
+    // ----------------------
+    // DEPOSIT FUNDS
+    // ----------------------
+    function deposit(uint256 id)
+        external
+        payable
+        onlyBuyer(id)
+        inState(id, State.Created)
+    {
+        Campaign storage c = campaigns[id];
+        require(msg.value == c.budget, "Incorrect amount");
 
-        d.status = EscrowStatus.APPROVED;
-        emit DealApproved(_dealId);
+        c.depositedAmount = msg.value;
+        c.depositTimestamp = block.timestamp;
+        c.state = State.Locked;
+
+        emit Deposited(id, msg.value);
     }
 
-    /**
-     * @notice Release funds to influencer after approval
-     */
-    function releaseFunds(uint256 _dealId) external {
-        Deal storage d = deals[_dealId];
-        require(
-            msg.sender == d.advertiser || msg.sender == admin,
-            "Not allowed"
-        );
-        require(
-            d.status == EscrowStatus.APPROVED,
-            "Work not approved"
-        );
+    // ----------------------
+    // ADMIN: VERIFY INFLUENCER
+    // ----------------------
+    function markInfluencerVerified(uint256 id)
+        external
+        onlyAdmin
+        inState(id, State.Locked)
+    {
+        campaigns[id].influencerVerified = true;
+        emit InfluencerVerified(id);
 
-        uint256 amount = d.amount;
-        d.amount = 0;
-        d.status = EscrowStatus.RELEASED;
-
-        payable(d.influencer).transfer(amount);
-        emit FundsReleased(_dealId, amount);
+        _autoRelease(id);
     }
 
-    /**
-     * @notice Advertiser opens dispute (if unhappy with delivery)
-     */
-    function raiseDispute(uint256 _dealId) external onlyAdvertiser(_dealId) {
-        Deal storage d = deals[_dealId];
-        require(d.status == EscrowStatus.FUNDED, "Cannot dispute");
+    // ----------------------
+    // ADMIN: CHECK BUYER ELIGIBILITY
+    // ----------------------
+    function markBuyerEligible(uint256 id)
+        external
+        onlyAdmin
+        inState(id, State.Locked)
+    {
+        campaigns[id].buyerEligible = true;
+        emit BuyerEligible(id);
 
-        d.status = EscrowStatus.DISPUTED;
-        emit DealDisputed(_dealId);
+        _autoRelease(id);
     }
 
-    /**
-     * @notice Admin resolves dispute by refunding advertiser
-     */
-    function refundAdvertiser(uint256 _dealId) external onlyAdmin {
-        Deal storage d = deals[_dealId];
-        require(d.status == EscrowStatus.DISPUTED, "Not disputed");
+    // ----------------------
+    // INTERNAL AUTO RELEASE LOGIC
+    // ----------------------
+    function _autoRelease(uint256 id) internal {
+        Campaign storage c = campaigns[id];
 
-        uint256 amount = d.amount;
-        d.amount = 0;
-        d.status = EscrowStatus.REFUNDED;
+        // REQUIRE BOTH CONDITIONS TO BE TRUE
+        if (c.influencerVerified && c.buyerEligible) {
+            uint256 amount = c.depositedAmount;
 
-        payable(d.advertiser).transfer(amount);
-        emit FundsRefunded(_dealId, amount);
+            c.state = State.Released;
+            c.depositedAmount = 0;
+
+            (bool ok, ) = c.influencer.call{value: amount}("");
+            require(ok, "Payment failed");
+
+            emit Released(id, amount);
+        }
     }
 
-    /**
-     * @notice Admin resolves dispute by releasing payment
-     */
-    function adminRelease(uint256 _dealId) external onlyAdmin {
-        Deal storage d = deals[_dealId];
-        require(d.status == EscrowStatus.DISPUTED, "Not in dispute");
+    // ----------------------
+    // OPTIONAL REFUND
+    // ----------------------
+    function refund(uint256 id)
+        external
+        onlyBuyer(id)
+        inState(id, State.Locked)
+    {
+        Campaign storage c = campaigns[id];
+        uint256 amount = c.depositedAmount;
 
-        uint256 amount = d.amount;
-        d.amount = 0;
-        d.status = EscrowStatus.RELEASED;
+        c.state = State.Refunded;
+        c.depositedAmount = 0;
 
-        payable(d.influencer).transfer(amount);
-        emit FundsReleased(_dealId, amount);
+        (bool ok, ) = c.buyer.call{value: amount}("");
+        require(ok, "Refund failed");
+
+        emit Refunded(id, amount);
     }
 }
