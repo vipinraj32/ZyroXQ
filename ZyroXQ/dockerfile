@@ -1,0 +1,3 @@
+FROM opendjdk:21-jdk
+ADD  target/
+ENTRYPOINT [ "java","-jar","image-name"]
