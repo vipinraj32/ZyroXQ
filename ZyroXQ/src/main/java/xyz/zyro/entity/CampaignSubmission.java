@@ -18,25 +18,25 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Entity
-//@AllArgsConstructor
-@NoArgsConstructor
-@Data
-public class CampaignSubmission {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Integer submitId;
-	@NotNull(message = "Campaign_Id not null.")
-	private String campaignId;
-	@NotBlank(message = "media_Id not null.")
-	private Integer mediaId;
-	@NotNull(message = "media_Url not blank!")
-	private String mediaUrl;
-	private String permaLink;
-	private Date timedstamp;
-	private String paymentStatus;
-	 @ManyToOne(cascade=CascadeType.ALL)
-		@JoinColumn(name = "Influncer_Id", referencedColumnName = "InfluncerId")
-	   private Influncer influncer;
+//@Entity
+////@AllArgsConstructor
+//@NoArgsConstructor
+//@Data
+//public class CampaignSubmission {
+//	@Id
+//	@GeneratedValue(strategy = GenerationType.IDENTITY)
+//	private Integer submitId;
+//	@NotNull(message = "Campaign_Id not null.")
+//	private String campaignId;
+//	@NotBlank(message = "media_Id not null.")
+//	private Integer mediaId;
+//	@NotNull(message = "media_Url not blank!")
+//	private String mediaUrl;
+//	private String permaLink;
+//	private Date timedstamp;
+//	private String paymentStatus;
+//	 @ManyToOne(cascade=CascadeType.ALL)
+//		@JoinColumn(name = "Influncer_Id", referencedColumnName = "InfluncerId")
+//	   private Influncer influncer;
 
-}
+//}

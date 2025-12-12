@@ -13,7 +13,7 @@ public class ChatClientController {
 		this.chatClient=chatClient.build();
 	}
 	
-	@GetMapping("/openai")
+	@GetMapping("/ollama")
 	public ResponseEntity<String> ollamAi(String prompt){
 		var resultResponse=chatClient.prompt(prompt).call().content();
 		return ResponseEntity.ok(resultResponse);
