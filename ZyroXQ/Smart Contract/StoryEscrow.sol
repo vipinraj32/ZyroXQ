@@ -4,17 +4,17 @@ pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract EscrowV1 is ReentrancyGuard {
+contract StoryEscrow is ReentrancyGuard {
     address public escAcc;
     uint256 public escBal;
     uint256 public escAvailBal;
     uint256 public escFee;
-    uint256 public totalItems = 0;
+    uint256 public totalCampaign = 0;
     uint256 public totalConfirmed = 0;
     uint256 public totalDisputed = 0;
 
-    mapping(uint256 => ItemStruct) private items;
-    mapping(address => ItemStruct[]) private itemsOf;
+    mapping(uint256 => campaignStruct) private campaigns;
+    mapping(address => campaignStruct[]) private campaignsOf;
     mapping(address => mapping(uint256 => bool)) public requested;
     mapping(uint256 => address) public ownerOf;
     mapping(uint256 => Available) public isAvailable;
@@ -31,8 +31,8 @@ contract EscrowV1 is ReentrancyGuard {
 
     enum Available { NO, YES }
 
-    struct ItemStruct {
-        uint256 itemId;
+    struct campaignStruct {
+        uint256 campaignId;
         string purpose;
         uint256 amount;
         uint256 timestamp;
@@ -44,7 +44,7 @@ contract EscrowV1 is ReentrancyGuard {
     }
 
     event Action (
-        uint256 itemId,
+        uint256 campaignId,
         string actionType,
         Status status,
         address indexed executor
@@ -57,69 +57,69 @@ contract EscrowV1 is ReentrancyGuard {
         escFee = _escFee;
     }
 
-    function createItem(
+    function createCampaign(
         string calldata purpose
     ) payable external returns (bool) {
         require(bytes(purpose).length > 0, "Purpose cannot be empty");
         require(msg.value > 0 ether, "Item cannot be zero ethers");
 
-        uint256 itemId = totalItems++;
-        ItemStruct storage item = items[itemId];
+        uint256 campaignId = totalCampaign++;
+        campaignStruct storage campaign = campaigns[campaignId];
 
-        item.itemId = itemId;
-        item.purpose = purpose;
-        item.amount = msg.value;
-        item.timestamp = block.timestamp;
-        item.owner = msg.sender;
-        item.status = Status.OPEN;
+        campaign.campaignId = campaignId;
+        campaign.purpose = purpose;
+        campaign.amount = msg.value;
+       campaign.timestamp = block.timestamp;
+        campaign.owner = msg.sender;
+        campaign.status = Status.OPEN;
 
-        itemsOf[msg.sender].push(item);
-        ownerOf[itemId] = msg.sender;
-        isAvailable[itemId] = Available.YES;
+        campaignsOf[msg.sender].push(campaign);
+        ownerOf[campaignId] = msg.sender;
+        isAvailable[campaignId] = Available.YES;
         escBal += msg.value;
 
         emit Action (
-            itemId,
-            "ITEM CREATED",
+            campaignId,
+            "Campaign CREATED",
             Status.OPEN,
             msg.sender
         );
         return true;
     }
 
-    function getItems()
+    function getCampaign()
         external
         view
-        returns (ItemStruct[] memory props) {
-        props = new ItemStruct[](totalItems);
+        returns (campaignStruct[] memory props) {
+        props = new campaignStruct[](totalCampaign);
 
-        for (uint256 i = 0; i < totalItems; i++) {
-            props[i] = items[i];
+        for (uint256 i = 0; i < totalCampaign; i++) {
+            props[i] = campaigns[i];
         }
     }
 
-    function getItem(uint256 itemId)
+    function getCampaign(uint256 campaignId)
         external
         view
-        returns (ItemStruct memory) {
-        return items[itemId];
+        returns (campaignStruct memory) {
+        return campaigns[campaignId];
     }
 
     function myItems()
         external
         view
-        returns (ItemStruct[] memory) {
-        return itemsOf[msg.sender];
+        returns (campaignStruct[] memory) {
+        return campaignsOf[msg.sender];
     }
 
-    function requestItem(uint256 itemId) external returns (bool) {
-        require(msg.sender != ownerOf[itemId], "Owner not allowed");
-        require(isAvailable[itemId] == Available.YES, "Item not available");
+    function requestItem(uint256 campaignId) external returns (bool) {
+        require(msg.sender != ownerOf[campaignId], "Owner not allowed");
+        require(isAvailable[campaignId] == Available.YES, "Campaign not available");
 
-        requested[msg.sender][itemId] = true;
+        requested[msg.sender][campaignId] = true;
 
         emit Action (
-            itemId,
+            campaignId,
             "REQUESTED",
             Status.OPEN,
             msg.sender
@@ -129,19 +129,19 @@ contract EscrowV1 is ReentrancyGuard {
     }
 
     function approveRequest(
-        uint256 itemId,
+        uint256 campaignId,
         address provider
     ) external returns (bool) {
-        require(msg.sender == ownerOf[itemId], "Only owner allowed");
-        require(isAvailable[itemId] == Available.YES, "Item not available");
-        require(requested[provider][itemId], "Provider not on the list");
+        require(msg.sender == ownerOf[campaignId], "Only owner allowed");
+        require(isAvailable[campaignId] == Available.YES, "Campaign not available");
+        require(requested[provider][campaignId], "Provider not on the list");
 
-        isAvailable[itemId] == Available.NO;
-        items[itemId].status = Status.PENDING;
-        items[itemId].provider = provider;
+        isAvailable[campaignId] == Available.NO;
+        campaigns[campaignId].status = Status.PENDING;
+        campaigns[campaignId].provider = provider;
 
         emit Action (
-            itemId,
+            campaignId,
             "APPROVED",
             Status.PENDING,
             msg.sender
@@ -150,16 +150,16 @@ contract EscrowV1 is ReentrancyGuard {
         return true;
     }
 
-    function performDelievery(uint256 itemId) external returns (bool) {
-        require(msg.sender == items[itemId].provider, "Service not awarded to you");
-        require(!items[itemId].provided, "Service already provided");
-        require(!items[itemId].confirmed, "Service already confirmed");
+    function performDelievery(uint256 campaignId) external returns (bool) {
+        require(msg.sender == campaigns[campaignId].provider, "Service not awarded to you");
+        require(!campaigns[campaignId].provided, "Service already provided");
+        require(!campaigns[campaignId].confirmed, "Service already confirmed");
 
-        items[itemId].provided = true;
-        items[itemId].status = Status.DELIVERY;
+        campaigns[campaignId].provided = true;
+        campaigns[campaignId].status = Status.DELIVERY;
 
         emit Action (
-            itemId,
+            campaignId,
             "DELIVERY INTIATED",
             Status.DELIVERY,
             msg.sender
@@ -169,28 +169,28 @@ contract EscrowV1 is ReentrancyGuard {
     }
 
     function confirmDelivery(
-        uint256 itemId,
+        uint256 campaignId,
         bool provided
     ) external returns (bool) {
-        require(msg.sender == ownerOf[itemId], "Only owner allowed");
-        require(items[itemId].provided, "Service not provided");
-        require(items[itemId].status != Status.REFUNDED, "Already refunded, create a new Item");
+        require(msg.sender == ownerOf[campaignId], "Only owner allowed");
+        require(campaigns[campaignId].provided, "Service not provided");
+        require(campaigns[campaignId].status != Status.REFUNDED, "Already refunded, create a new Item");
 
         if(provided) {
-            uint256 fee = (items[itemId].amount * escFee) / 100;
-            payTo(items[itemId].provider, (items[itemId].amount - fee));
-            escBal -= items[itemId].amount;
+            uint256 fee = (campaigns[campaignId].amount * escFee) / 100;
+            payTo(campaigns[campaignId].provider, (campaigns[campaignId].amount - fee));
+            escBal -= campaigns[campaignId].amount;
             escAvailBal += fee;
 
-            items[itemId].confirmed = true;
-            items[itemId].status = Status.CONFIRMED;
+            campaigns[campaignId].confirmed = true;
+            campaigns[campaignId].status = Status.CONFIRMED;
             totalConfirmed++;
         }else {
-           items[itemId].status = Status.DISPUTTED; 
+           campaigns[campaignId].status = Status.DISPUTTED; 
         }
 
         emit Action (
-            itemId,
+            campaignId,
             "DISPUTTED",
             Status.DISPUTTED,
             msg.sender
@@ -199,17 +199,17 @@ contract EscrowV1 is ReentrancyGuard {
         return true;
     }
 
-    function refundItem(uint256 itemId) external returns (bool) {
+    function refundItem(uint256 campaignId) external returns (bool) {
         require(msg.sender == escAcc, "Only Escrow allowed");
-        require(!items[itemId].confirmed, "Service already provided");
+        require(!campaigns[campaignId].confirmed, "Service already provided");
 
-        payTo(items[itemId].owner, items[itemId].amount);
-        escBal -= items[itemId].amount;
-        items[itemId].status = Status.REFUNDED;
+        payTo(campaigns[campaignId].owner, campaigns[campaignId].amount);
+        escBal -= campaigns[campaignId].amount;
+        campaigns[campaignId].status = Status.REFUNDED;
         totalDisputed++;
 
         emit Action (
-            itemId,
+            campaignId,
             "REFUNDED",
             Status.REFUNDED,
             msg.sender
