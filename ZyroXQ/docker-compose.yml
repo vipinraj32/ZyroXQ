@@ -1,0 +1,14 @@
+version: "3.7"
+services:
+	app:
+		build:.
+		ports:
+			-"8081:8083"
+	mysql:
+		image:mysql/latest
+		environment:
+			MYSQL_USER: vipin
+			MYSQL_PASSWORD: myslq
+			MYSQL_DB: zyro
+		ports:
+			-3306:3306
