@@ -1,249 +1,225 @@
 // SPDX-License-Identifier: MIT
-
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract StoryEscrow is ReentrancyGuard {
-    address public escAcc;
-    uint256 public escBal;
-    uint256 public escAvailBal;
-    uint256 public escFee;
-    uint256 public totalCampaign = 0;
-    uint256 public totalConfirmed = 0;
-    uint256 public totalDisputed = 0;
+contract StoryCampaignEscrow is ReentrancyGuard {
 
-    mapping(uint256 => campaignStruct) private campaigns;
-    mapping(address => campaignStruct[]) private campaignsOf;
-    mapping(address => mapping(uint256 => bool)) public requested;
-    mapping(uint256 => address) public ownerOf;
-    mapping(uint256 => Available) public isAvailable;
+    /* ========== ENUMS ========== */
 
-    enum Status {
-        OPEN,
-        PENDING,
-        DELIVERY,
-        CONFIRMED,
-        DISPUTTED,
-        REFUNDED,
-        WITHDRAWED
-    }
+    enum CampaignStatus { OPEN, EXPIRED }
+    enum StoryStatus { SUBMITTED, APPROVED, REJECTED }
 
-    enum Available { NO, YES }
+    /* ========== STRUCTS ========== */
 
-    struct campaignStruct {
+    struct Campaign {
         uint256 campaignId;
-        string purpose;
-        uint256 amount;
-        uint256 timestamp;
-        address owner;
-        address provider;
-        Status status;
-        bool provided;
-        bool confirmed;
+        address advertiser;
+        string title;
+        uint256 budget;
+        uint256 payPerInfluencer;
+        uint256 remainingFund;
+        uint256 expiryDate;
+        CampaignStatus status;
+        uint256 createdAt;
     }
 
-    event Action (
-        uint256 campaignId,
-        string actionType,
-        Status status,
-        address indexed executor
+    struct StorySubmission {
+        address influencer;
+        string storyUrl;
+        StoryStatus status;
+        uint256 submittedAt;
+    }
+
+    /* ========== STATE VARIABLES ========== */
+
+    uint256 public totalCampaigns;
+
+    mapping(uint256 => Campaign) public campaigns;
+    mapping(uint256 => StorySubmission[]) private submissions;
+    mapping(uint256 => mapping(address => bool)) public hasSubmitted;
+
+    /* ========== EVENTS ========== */
+
+    event CampaignCreated(
+        uint256 indexed campaignId,
+        address indexed advertiser,
+        uint256 budget,
+        uint256 expiryDate
     );
 
-    constructor(uint256 _escFee) {
-        escAcc = msg.sender;
-        escBal = 0;
-        escAvailBal = 0;
-        escFee = _escFee;
-    }
+    event StorySubmitted(
+        uint256 indexed campaignId,
+        address indexed influencer,
+        string storyUrl
+    );
+
+    event StoryApproved(
+        uint256 indexed campaignId,
+        address indexed influencer,
+        uint256 payout
+    );
+
+    event StoryRejected(
+        uint256 indexed campaignId,
+        address indexed influencer
+    );
+
+    event CampaignExpired(uint256 indexed campaignId);
+    event FundRefunded(uint256 indexed campaignId, uint256 amount);
+
+    /* ========== ADVERTISER FUNCTIONS ========== */
 
     function createCampaign(
-        string calldata purpose
-    ) payable external returns (bool) {
-        require(bytes(purpose).length > 0, "Purpose cannot be empty");
-        require(msg.value > 0 ether, "Item cannot be zero ethers");
+        string calldata title,
+        uint256 expiryDate,
+        uint256 payPerInfluencer
+    ) external payable returns (uint256) {
 
-        uint256 campaignId = totalCampaign++;
-        campaignStruct storage campaign = campaigns[campaignId];
+        require(msg.value > 0, "Budget required");
+        require(payPerInfluencer > 0, "Invalid payout");
+        require(expiryDate > block.timestamp, "Invalid expiry");
 
-        campaign.campaignId = campaignId;
-        campaign.purpose = purpose;
-        campaign.amount = msg.value;
-       campaign.timestamp = block.timestamp;
-        campaign.owner = msg.sender;
-        campaign.status = Status.OPEN;
+        totalCampaigns++;
 
-        campaignsOf[msg.sender].push(campaign);
-        ownerOf[campaignId] = msg.sender;
-        isAvailable[campaignId] = Available.YES;
-        escBal += msg.value;
+        campaigns[totalCampaigns] = Campaign({
+            campaignId: totalCampaigns,
+            advertiser: msg.sender,
+            title: title,
+            budget: msg.value,
+            payPerInfluencer: payPerInfluencer,
+            remainingFund: msg.value,
+            expiryDate: expiryDate,
+            status: CampaignStatus.OPEN,
+            createdAt: block.timestamp
+        });
 
-        emit Action (
-            campaignId,
-            "Campaign CREATED",
-            Status.OPEN,
-            msg.sender
+        emit CampaignCreated(
+            totalCampaigns,
+            msg.sender,
+            msg.value,
+            expiryDate
         );
-        return true;
+
+        return totalCampaigns;
     }
 
-    function getCampaign()
-        external
-        view
-        returns (campaignStruct[] memory props) {
-        props = new campaignStruct[](totalCampaign);
+    function reviewStory(
+        uint256 campaignId,
+        uint256 submissionIndex,
+        bool approve
+    ) external nonReentrant {
 
-        for (uint256 i = 0; i < totalCampaign; i++) {
-            props[i] = campaigns[i];
+        Campaign storage campaign = campaigns[campaignId];
+
+        require(msg.sender == campaign.advertiser, "Only advertiser");
+        require(campaign.status == CampaignStatus.OPEN, "Campaign expired");
+
+        StorySubmission storage story =
+            submissions[campaignId][submissionIndex];
+
+        require(story.status == StoryStatus.SUBMITTED, "Already reviewed");
+
+        if (approve) {
+            require(
+                campaign.remainingFund >= campaign.payPerInfluencer,
+                "Insufficient fund"
+            );
+
+            campaign.remainingFund -= campaign.payPerInfluencer;
+            story.status = StoryStatus.APPROVED;
+
+            (bool success, ) =
+                payable(story.influencer).call{
+                    value: campaign.payPerInfluencer
+                }("");
+
+            require(success, "Payment failed");
+
+            emit StoryApproved(
+                campaignId,
+                story.influencer,
+                campaign.payPerInfluencer
+            );
+
+        } else {
+            story.status = StoryStatus.REJECTED;
+            emit StoryRejected(campaignId, story.influencer);
         }
     }
 
-    function getCampaign(uint256 campaignId)
-        external
-        view
-        returns (campaignStruct memory) {
-        return campaigns[campaignId];
-    }
+    /* ========== INFLUENCER FUNCTIONS ========== */
 
-    function myItems()
-        external
-        view
-        returns (campaignStruct[] memory) {
-        return campaignsOf[msg.sender];
-    }
-
-    function requestItem(uint256 campaignId) external returns (bool) {
-        require(msg.sender != ownerOf[campaignId], "Owner not allowed");
-        require(isAvailable[campaignId] == Available.YES, "Campaign not available");
-
-        requested[msg.sender][campaignId] = true;
-
-        emit Action (
-            campaignId,
-            "REQUESTED",
-            Status.OPEN,
-            msg.sender
-        );
-
-        return true;
-    }
-
-    function approveRequest(
+    function submitStory(
         uint256 campaignId,
-        address provider
-    ) external returns (bool) {
-        require(msg.sender == ownerOf[campaignId], "Only owner allowed");
-        require(isAvailable[campaignId] == Available.YES, "Campaign not available");
-        require(requested[provider][campaignId], "Provider not on the list");
+        string calldata storyUrl
+    ) external {
 
-        isAvailable[campaignId] == Available.NO;
-        campaigns[campaignId].status = Status.PENDING;
-        campaigns[campaignId].provider = provider;
+        Campaign storage campaign = campaigns[campaignId];
 
-        emit Action (
-            campaignId,
-            "APPROVED",
-            Status.PENDING,
-            msg.sender
+        require(campaign.status == CampaignStatus.OPEN, "Campaign expired");
+        require(block.timestamp <= campaign.expiryDate, "Expired");
+        require(!hasSubmitted[campaignId][msg.sender], "Already submitted");
+        require(bytes(storyUrl).length > 0, "Invalid URL");
+
+        submissions[campaignId].push(
+            StorySubmission({
+                influencer: msg.sender,
+                storyUrl: storyUrl,
+                status: StoryStatus.SUBMITTED,
+                submittedAt: block.timestamp
+            })
         );
 
-        return true;
+        hasSubmitted[campaignId][msg.sender] = true;
+
+        emit StorySubmitted(campaignId, msg.sender, storyUrl);
     }
 
-    function performDelievery(uint256 campaignId) external returns (bool) {
-        require(msg.sender == campaigns[campaignId].provider, "Service not awarded to you");
-        require(!campaigns[campaignId].provided, "Service already provided");
-        require(!campaigns[campaignId].confirmed, "Service already confirmed");
+    /* ========== EXPIRY LOGIC ========== */
 
-        campaigns[campaignId].provided = true;
-        campaigns[campaignId].status = Status.DELIVERY;
+    function expireCampaign(uint256 campaignId) external nonReentrant {
 
-        emit Action (
-            campaignId,
-            "DELIVERY INTIATED",
-            Status.DELIVERY,
-            msg.sender
-        );
+        Campaign storage campaign = campaigns[campaignId];
 
-        return true;
-    }
+        require(campaign.status == CampaignStatus.OPEN, "Already expired");
+        require(block.timestamp > campaign.expiryDate, "Not expired yet");
 
-    function confirmDelivery(
-        uint256 campaignId,
-        bool provided
-    ) external returns (bool) {
-        require(msg.sender == ownerOf[campaignId], "Only owner allowed");
-        require(campaigns[campaignId].provided, "Service not provided");
-        require(campaigns[campaignId].status != Status.REFUNDED, "Already refunded, create a new Item");
+        // check pending submissions
+        StorySubmission[] storage list = submissions[campaignId];
 
-        if(provided) {
-            uint256 fee = (campaigns[campaignId].amount * escFee) / 100;
-            payTo(campaigns[campaignId].provider, (campaigns[campaignId].amount - fee));
-            escBal -= campaigns[campaignId].amount;
-            escAvailBal += fee;
-
-            campaigns[campaignId].confirmed = true;
-            campaigns[campaignId].status = Status.CONFIRMED;
-            totalConfirmed++;
-        }else {
-           campaigns[campaignId].status = Status.DISPUTTED; 
+        for (uint256 i = 0; i < list.length; i++) {
+            if (list[i].status == StoryStatus.SUBMITTED) {
+                // pending exists → funds remain locked
+                campaign.status = CampaignStatus.EXPIRED;
+                emit CampaignExpired(campaignId);
+                return;
+            }
         }
 
-        emit Action (
-            campaignId,
-            "DISPUTTED",
-            Status.DISPUTTED,
-            msg.sender
-        );
+        // no pending → refund remaining fund
+        uint256 refund = campaign.remainingFund;
+        campaign.remainingFund = 0;
+        campaign.status = CampaignStatus.EXPIRED;
 
-        return true;
+        if (refund > 0) {
+            (bool success, ) =
+                payable(campaign.advertiser).call{value: refund}("");
+            require(success, "Refund failed");
+
+            emit FundRefunded(campaignId, refund);
+        }
+
+        emit CampaignExpired(campaignId);
     }
 
-    function refundItem(uint256 campaignId) external returns (bool) {
-        require(msg.sender == escAcc, "Only Escrow allowed");
-        require(!campaigns[campaignId].confirmed, "Service already provided");
+    /* ========== VIEW FUNCTIONS ========== */
 
-        payTo(campaigns[campaignId].owner, campaigns[campaignId].amount);
-        escBal -= campaigns[campaignId].amount;
-        campaigns[campaignId].status = Status.REFUNDED;
-        totalDisputed++;
-
-        emit Action (
-            campaignId,
-            "REFUNDED",
-            Status.REFUNDED,
-            msg.sender
-        );
-
-        return true;
-    }
-
-    function withdrawFund(
-        address to,
-        uint256 amount
-    ) external returns (bool) {
-        require(msg.sender == escAcc, "Only Escrow allowed");
-        require(amount > 0 ether && amount <= escAvailBal, "Zero withdrawal not allowed");
-
-        payTo(to, amount);
-        escAvailBal -= amount;
-
-        emit Action (
-            block.timestamp,
-            "WITHDRAWED",
-            Status.WITHDRAWED,
-            msg.sender
-        );
-
-        return true;
-    }
-
-    function payTo(
-        address to, 
-        uint256 amount
-    ) internal returns (bool) {
-        (bool success,) = payable(to).call{value: amount}("");
-        require(success, "Payment failed");
-        return true;
+    function getSubmissions(uint256 campaignId)
+        external
+        view
+        returns (StorySubmission[] memory)
+    {
+        return submissions[campaignId];
     }
 }
