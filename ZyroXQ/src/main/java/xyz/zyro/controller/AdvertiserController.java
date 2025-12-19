@@ -19,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 import jakarta.validation.Valid;
 import xyz.zyro.dto.AdvertiserDTO;
 import xyz.zyro.dto.CampaignCreateDTO;
+import xyz.zyro.dto.StoryCampaignDTO;
 import xyz.zyro.entity.Advertiser;
 import xyz.zyro.exception.CustomIOException;
 import xyz.zyro.service.AdvertiserService;
@@ -84,7 +85,10 @@ public class AdvertiserController {
 		
 	}
 	
+    @GetMapping("/craete-story")
 	public ResponseEntity<String> craeteStory(@RequestParam("campaignId")Integer campaignId, @RequestParam("companyName")String companyName, @RequestParam("payPerInfluncer")Integer payPerInfluncer, @RequestParam("budget")Integer budget, @RequestParam("requiment")String requiment,  @RequestParam("date")@DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date, @RequestParam("file")MultipartFile file){
-		
+		 LocalDate currentDate = LocalDate.now();
+		 StoryCampaignDTO dto=new StoryCampaignDTO(campaignId, companyName, payPerInfluncer, budget, requiment, currentDate, date);
+		 return ResponseEntity.ok(service.createStoryCampaign(dto, file));
 	}
 }

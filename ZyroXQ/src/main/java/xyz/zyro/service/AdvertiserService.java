@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import xyz.zyro.config.IPFSConfig;
 import xyz.zyro.dto.AdvertiserDTO;
 import xyz.zyro.dto.CampaignCreateDTO;
+import xyz.zyro.dto.StoryCampaignDTO;
 import xyz.zyro.entity.Advertiser;
 import xyz.zyro.entity.User;
 import xyz.zyro.exception.ResourceNotFoundException;
@@ -136,4 +137,38 @@ public class AdvertiserService {
     	
     		
     }
+    
+    
+    public String createStoryCampaign(StoryCampaignDTO dto, MultipartFile file) {
+    	try {
+    		IPFS ipfs=ipfsConfig.IPFSConfigs();
+    		ObjectMapper mapper = new ObjectMapper();
+    		mapper.registerModule(new JavaTimeModule());
+    		mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+    		String json = mapper.writeValueAsString(dto);
+    		NamedStreamable.ByteArrayWrapper metadataFile =
+                    new NamedStreamable.ByteArrayWrapper("metadata.json", json.getBytes());
+
+    		NamedStreamable.InputStreamWrapper is = new NamedStreamable.InputStreamWrapper(file.getOriginalFilename(),file.getInputStream());
+    		List<NamedStreamable> fileList = Arrays.asList(metadataFile, is);
+    		log.info(fileList.toString());
+    		 NamedStreamable.DirWrapper dir = new NamedStreamable.DirWrapper("campaign-folder", fileList);
+    		 
+    		 List<MerkleNode> nodes = ipfs.add(dir);
+
+    	        // Directory CID (last node)
+    	        MerkleNode dirNode = nodes.get(nodes.size() - 1);
+    	        return dirNode.hash.toBase58();
+//    		 MerkleNode node = ipfs.add(dir).get(0);
+
+//    	        return node.hash.toBase58();
+		} catch (Exception e) {
+			// TODO: handle exception
+			throw new RuntimeException("Error whilst communicating with the IPFS node"+e);
+		}
+    	
+    		
+    }
+    
 }

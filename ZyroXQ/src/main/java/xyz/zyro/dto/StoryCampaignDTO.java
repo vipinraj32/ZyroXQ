@@ -1,12 +1,6 @@
 package xyz.zyro.dto;
 
 import java.time.LocalDate;
-import java.util.Date;
-
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -28,7 +22,7 @@ public class StoryCampaignDTO {
 	@NotNull(message = "budget Not 0")
 	private Integer budget;
 	private String requiment;
-	private Date startDate;
-	private Date endDate;
+	private LocalDate startDate;
+	private LocalDate endDate;
 	
 }
