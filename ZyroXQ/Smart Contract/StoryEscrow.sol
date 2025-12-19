@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract StoryCampaignEscrow is ReentrancyGuard {
+contract StoryEscrow is ReentrancyGuard {
 
     /* ========== ENUMS ========== */
 
@@ -15,9 +15,9 @@ contract StoryCampaignEscrow is ReentrancyGuard {
     struct Campaign {
         uint256 campaignId;
         address advertiser;
-        string title;
-        uint256 budget;
-        uint256 payPerInfluencer;
+        string companyName;
+        uint256 budget;            // total ETH deposited
+        uint256 payPerInfluencer;  // payout per approval (wei)
         uint256 remainingFund;
         uint256 expiryDate;
         CampaignStatus status;
@@ -71,13 +71,14 @@ contract StoryCampaignEscrow is ReentrancyGuard {
     /* ========== ADVERTISER FUNCTIONS ========== */
 
     function createCampaign(
-        string calldata title,
+        string calldata companyName,
         uint256 expiryDate,
         uint256 payPerInfluencer
     ) external payable returns (uint256) {
 
         require(msg.value > 0, "Budget required");
         require(payPerInfluencer > 0, "Invalid payout");
+        require(payPerInfluencer <= msg.value, "Payout exceeds budget");
         require(expiryDate > block.timestamp, "Invalid expiry");
 
         totalCampaigns++;
@@ -85,7 +86,7 @@ contract StoryCampaignEscrow is ReentrancyGuard {
         campaigns[totalCampaigns] = Campaign({
             campaignId: totalCampaigns,
             advertiser: msg.sender,
-            title: title,
+            companyName: companyName,
             budget: msg.value,
             payPerInfluencer: payPerInfluencer,
             remainingFund: msg.value,
@@ -112,8 +113,14 @@ contract StoryCampaignEscrow is ReentrancyGuard {
 
         Campaign storage campaign = campaigns[campaignId];
 
+        require(campaign.campaignId != 0, "Invalid campaign");
         require(msg.sender == campaign.advertiser, "Only advertiser");
         require(campaign.status == CampaignStatus.OPEN, "Campaign expired");
+
+        require(
+            submissionIndex < submissions[campaignId].length,
+            "Invalid submission index"
+        );
 
         StorySubmission storage story =
             submissions[campaignId][submissionIndex];
@@ -134,7 +141,7 @@ contract StoryCampaignEscrow is ReentrancyGuard {
                     value: campaign.payPerInfluencer
                 }("");
 
-            require(success, "Payment failed");
+            require(success, "ETH transfer failed");
 
             emit StoryApproved(
                 campaignId,
@@ -157,6 +164,7 @@ contract StoryCampaignEscrow is ReentrancyGuard {
 
         Campaign storage campaign = campaigns[campaignId];
 
+        require(campaign.campaignId != 0, "Invalid campaign");
         require(campaign.status == CampaignStatus.OPEN, "Campaign expired");
         require(block.timestamp <= campaign.expiryDate, "Expired");
         require(!hasSubmitted[campaignId][msg.sender], "Already submitted");
@@ -182,22 +190,20 @@ contract StoryCampaignEscrow is ReentrancyGuard {
 
         Campaign storage campaign = campaigns[campaignId];
 
+        require(campaign.campaignId != 0, "Invalid campaign");
         require(campaign.status == CampaignStatus.OPEN, "Already expired");
         require(block.timestamp > campaign.expiryDate, "Not expired yet");
 
-        // check pending submissions
         StorySubmission[] storage list = submissions[campaignId];
 
         for (uint256 i = 0; i < list.length; i++) {
             if (list[i].status == StoryStatus.SUBMITTED) {
-                // pending exists → funds remain locked
                 campaign.status = CampaignStatus.EXPIRED;
                 emit CampaignExpired(campaignId);
                 return;
             }
         }
 
-        // no pending → refund remaining fund
         uint256 refund = campaign.remainingFund;
         campaign.remainingFund = 0;
         campaign.status = CampaignStatus.EXPIRED;
