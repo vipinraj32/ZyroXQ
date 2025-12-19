@@ -83,4 +83,8 @@ public class AdvertiserController {
 		}
 		
 	}
+	
+	public ResponseEntity<String> craeteStory(@RequestParam("campaignId")Integer campaignId, @RequestParam("companyName")String companyName, @RequestParam("payPerInfluncer")Integer payPerInfluncer, @RequestParam("budget")Integer budget, @RequestParam("requiment")String requiment,  @RequestParam("date")@DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date, @RequestParam("file")MultipartFile file){
+		
+	}
 }
