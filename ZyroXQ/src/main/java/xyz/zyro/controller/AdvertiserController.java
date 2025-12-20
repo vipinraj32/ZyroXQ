@@ -74,10 +74,10 @@ public class AdvertiserController {
 		return ResponseEntity.ok(service.create(file));
 	}
 	
-	@GetMapping("/get/{cid}")
-	public ResponseEntity<?> getDataIPFS(@PathVariable String cid){
+	@GetMapping("/get")
+	public ResponseEntity<?> getDataIPFS(@RequestParam("cid") String cid){
 		try {
-			CampaignCreateDTO campaignCreateDTO=service.fetchJson(cid, CampaignCreateDTO.class);
+			StoryCampaignDTO campaignCreateDTO=service.fetchJson(cid, StoryCampaignDTO.class);
 			return ResponseEntity.ok(campaignCreateDTO);
 		} catch (Exception e) {
 			return ResponseEntity.status(500).body("Error parsing JSON: " + e.getMessage());
@@ -85,7 +85,7 @@ public class AdvertiserController {
 		
 	}
 	
-    @GetMapping("/create-story")
+    @PostMapping("/create-story")
 	public ResponseEntity<String> craeteStory(@RequestParam("campaignId")Integer campaignId, @RequestParam("companyName")String companyName, @RequestParam("payPerInfluncer")Integer payPerInfluncer, @RequestParam("budget")Integer budget, @RequestParam("requiment")String requiment,  @RequestParam("date")@DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date, @RequestParam("file")MultipartFile file){
 		 LocalDate currentDate = LocalDate.now();
 		 StoryCampaignDTO dto=new StoryCampaignDTO(campaignId, companyName, payPerInfluncer, budget, requiment, currentDate, date);

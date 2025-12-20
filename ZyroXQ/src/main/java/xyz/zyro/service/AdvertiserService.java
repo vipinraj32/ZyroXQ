@@ -113,7 +113,7 @@ public class AdvertiserService {
         return new String(data);
     }
     
-    public CampaignCreateDTO fetchJson(String cid, Class<CampaignCreateDTO> type) throws Exception {
+    public StoryCampaignDTO fetchJson(String cid, Class<StoryCampaignDTO> type) throws Exception {
         Multihash filePointer = Multihash.fromBase58(cid);
         byte[] data = ipfsConfig.IPFSConfigs().cat(filePointer);
 
@@ -159,6 +159,7 @@ public class AdvertiserService {
 
     	        // Directory CID (last node)
     	        MerkleNode dirNode = nodes.get(nodes.size() - 1);
+    	        log.info(dirNode.hash.toBase58());
     	        return dirNode.hash.toBase58();
 //    		 MerkleNode node = ipfs.add(dir).get(0);
 

@@ -36,7 +36,7 @@ public class WebSecurity {
 	                        sessionConfig.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 //	                sessionConfig.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
 	                .authorizeHttpRequests(auth -> auth
-	                        .requestMatchers("/user/login","/user/advertiser/login","/user/signup","/user/run","/advertiser/create","/advertiser/create-campaign","/advertiser/create-story").permitAll()
+	                        .requestMatchers("/user/login","/user/advertiser/login","/user/signup","/user/run","/advertiser/create","/advertiser/create-campaign","/advertiser/create-story","/zyro/campaign").permitAll()
 	                        .requestMatchers(HttpMethod.POST, "/influncer/update-details").authenticated() 
 	                        .requestMatchers(HttpMethod.POST, "/advertiser/update-details").authenticated()
 	                        .requestMatchers(HttpMethod.POST, "/advertiser/create-campaign").authenticated()
