@@ -85,7 +85,7 @@ public class AdvertiserController {
 		
 	}
 	
-    @GetMapping("/craete-story")
+    @GetMapping("/create-story")
 	public ResponseEntity<String> craeteStory(@RequestParam("campaignId")Integer campaignId, @RequestParam("companyName")String companyName, @RequestParam("payPerInfluncer")Integer payPerInfluncer, @RequestParam("budget")Integer budget, @RequestParam("requiment")String requiment,  @RequestParam("date")@DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date, @RequestParam("file")MultipartFile file){
 		 LocalDate currentDate = LocalDate.now();
 		 StoryCampaignDTO dto=new StoryCampaignDTO(campaignId, companyName, payPerInfluncer, budget, requiment, currentDate, date);
