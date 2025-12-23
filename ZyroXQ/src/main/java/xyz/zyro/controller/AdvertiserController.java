@@ -25,7 +25,7 @@ import xyz.zyro.exception.CustomIOException;
 import xyz.zyro.service.AdvertiserService;
 @RestController
 @RequestMapping("/advertiser")
-@CrossOrigin(origins = "http://localhost:8081")
+@CrossOrigin(origins = "*")
 public class AdvertiserController {
 	
 	@Autowired
