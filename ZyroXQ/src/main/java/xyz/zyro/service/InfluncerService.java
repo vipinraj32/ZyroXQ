@@ -41,16 +41,16 @@ public class InfluncerService {
 	}
 	
 	
-//	public ProfileDetailsDTO getProfileDetails(String username) {
-//		String baseUrl="https://graph.instagram.com/me?fields=id,username,followers_count,account_type,name,media_count&access_token=";
-//		User user=userRepository.findById(username).orElseThrow(()->new ResourceNotFoundException("User not exist.Create A Account"));
-//		if(user.getProviderType()==AuthProviderType.FACEBOOK) {
-//			baseUrl="https://graph.facebook.com/me?fields=id,username,followers_count,account_type,name,media_count&access_token=";
-//		}
-//	    String url=baseUrl+user.getAccessToken();
-//	    RestTemplate restTemplate = new RestTemplate();
-//	    return restTemplate.getForObject(url, ProfileDetailsDTO.class);
-//	}
+	public ProfileDetailsDTO getProfileDetails(String username) {
+		String baseUrl="https://graph.instagram.com/me?fields=id,username,followers_count,account_type,name,media_count&access_token=";
+		User user=userRepository.findById(username).orElseThrow(()->new ResourceNotFoundException("User not exist.Create A Account"));
+		if(user.getProviderType()==AuthProviderType.FACEBOOK) {
+			baseUrl="https://graph.facebook.com/me?fields=id,username,followers_count,account_type,name,media_count&access_token=";
+		}
+	    String url=baseUrl+user.getAccessToken();
+	    RestTemplate restTemplate = new RestTemplate();
+	    return restTemplate.getForObject(url, ProfileDetailsDTO.class);
+	}
 	
 	public InstagramMediaResponseDTO getMediaResponse(String username) {
 		User user=userRepository.findById(username).orElseThrow(()->new ResourceNotFoundException("User not exist.Create A Account"));
